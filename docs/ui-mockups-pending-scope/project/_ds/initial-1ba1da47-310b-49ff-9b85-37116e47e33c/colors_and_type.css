@@ -1,0 +1,165 @@
+/* =============================================================
+   shadcn/ui Design System — colors, type, radii, shadows, spacing
+   Extracted from the Figma source of truth (Jan 2026 community kit).
+   All tokens are HSL-friendly; we use rgb() for fidelity to the
+   measured pixel values.
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* -------- Light mode (default) -------- */
+:root {
+  /* Neutral surface scale */
+  --background:           rgb(255, 255, 255);
+  --foreground:           rgb(10, 10, 10);       /* neutral-950 */
+  --foreground-strong:    rgb(0, 0, 0);
+  --muted:                rgb(245, 245, 245);    /* neutral-100 */
+  --muted-foreground:     rgb(115, 115, 115);    /* neutral-500 */
+  --accent:               rgb(250, 250, 250);    /* neutral-50  — sidebar tint */
+  --accent-foreground:    rgb(10, 10, 10);
+  --border:               rgb(229, 229, 229);    /* neutral-200 */
+  --border-strong:        rgb(115, 115, 115);    /* active input border */
+  --input:                rgb(229, 229, 229);
+  --ring:                 rgb(10, 10, 10);
+
+  /* Intent */
+  --primary:              rgb(23, 23, 23);       /* neutral-900 */
+  --primary-foreground:   rgb(250, 250, 250);
+  --secondary:            rgb(245, 245, 245);
+  --secondary-foreground: rgb(10, 10, 10);
+  --destructive:          rgb(220, 38, 38);      /* red-600 */
+  --destructive-foreground: rgba(255, 255, 255, 0.95);
+
+  /* Card */
+  --card:                 rgb(255, 255, 255);
+  --card-foreground:      rgb(10, 10, 10);
+  --popover:              rgb(255, 255, 255);
+  --popover-foreground:   rgb(10, 10, 10);
+
+  /* Chart ramp */
+  --chart-1:              rgb(0, 144, 255);
+  --chart-2:              rgb(94, 177, 239);
+  --chart-3:              rgb(5, 136, 240);
+  --chart-4:              rgb(13, 116, 206);
+  --chart-5:              rgb(17, 50, 100);
+  --chart-accent-lime:    rgb(173, 250, 29);
+  --chart-accent-violet:  rgb(124, 58, 237);
+
+  /* Radii */
+  --radius-sm:  6px;
+  --radius-md:  8px;
+  --radius-lg:  10px;   /* button default */
+  --radius-xl:  12px;   /* card inner */
+  --radius-2xl: 14px;   /* block outer */
+  --radius-3xl: 24px;   /* hero card */
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.10);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.10),
+               0 2px 4px -2px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.10),
+               0 4px 6px -4px rgba(0, 0, 0, 0.10);
+
+  /* Spacing (the 4px scale) */
+  --space-0:  0;
+  --space-1:  2px;
+  --space-2:  4px;
+  --space-3:  6px;
+  --space-4:  8px;
+  --space-5:  10px;
+  --space-6:  12px;
+  --space-8:  16px;
+  --space-10: 20px;
+  --space-12: 24px;
+  --space-16: 32px;
+  --space-20: 40px;
+  --space-28: 56px;
+  --space-32: 64px;
+  --space-40: 80px;
+
+  /* Type families */
+  --font-sans:     'Geist', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-ui:       'Inter', 'Geist', system-ui, sans-serif;
+  --font-display:  'Geist', 'Inter', system-ui, sans-serif;
+  --font-mono:     'Geist Mono', 'Roboto Mono', ui-monospace, monospace;
+
+  /* Type sizes (px) */
+  --text-xs:   12px;   --lh-xs:   16px;
+  --text-sm:   13px;   --lh-sm:   20px;
+  --text-base: 14px;   --lh-base: 20px;
+  --text-md:   16px;   --lh-md:   24px;
+  --text-lg:   18px;   --lh-lg:   28px;
+  --text-xl:   20px;   --lh-xl:   28px;
+  --text-2xl:  24px;   --lh-2xl:  32px;
+  --text-3xl:  30px;   --lh-3xl:  36px;
+  --text-4xl:  36px;   --lh-4xl:  40px;
+  --text-5xl:  48px;   --lh-5xl:  56px;
+  --text-6xl:  72px;   --lh-6xl:  72px;
+}
+
+/* -------- Dark mode -------- */
+:root[data-theme='dark'],
+.dark {
+  --background:           rgb(10, 10, 10);
+  --foreground:           rgb(250, 250, 250);
+  --foreground-strong:    rgb(255, 255, 255);
+  --muted:                rgb(38, 38, 38);
+  --muted-foreground:     rgb(161, 161, 170);
+  --accent:               rgb(23, 23, 23);
+  --accent-foreground:    rgb(250, 250, 250);
+  --border:               rgb(38, 38, 38);
+  --border-strong:        rgb(82, 82, 82);
+  --input:                rgb(38, 38, 38);
+  --ring:                 rgb(212, 212, 212);
+
+  --primary:              rgb(250, 250, 250);
+  --primary-foreground:   rgb(23, 23, 23);
+  --secondary:            rgb(38, 38, 38);
+  --secondary-foreground: rgb(250, 250, 250);
+  --destructive:          rgb(239, 68, 68);
+  --destructive-foreground: rgba(255, 255, 255, 0.95);
+
+  --card:                 rgb(10, 10, 10);
+  --card-foreground:      rgb(250, 250, 250);
+  --popover:              rgb(23, 23, 23);
+  --popover-foreground:   rgb(250, 250, 250);
+}
+
+/* =============================================================
+   Semantic type classes — drop these on any element.
+   ============================================================= */
+
+.t-display-1 { font-family: var(--font-display); font-weight: 700; font-size: var(--text-6xl); line-height: var(--lh-6xl); letter-spacing: -0.02em; color: var(--foreground); }
+.t-display-2 { font-family: var(--font-display); font-weight: 700; font-size: var(--text-5xl); line-height: var(--lh-5xl); letter-spacing: -0.02em; color: var(--foreground); }
+.t-h1        { font-family: var(--font-display); font-weight: 700; font-size: var(--text-4xl); line-height: var(--lh-4xl); letter-spacing: -0.01em; color: var(--foreground); }
+.t-h2        { font-family: var(--font-display); font-weight: 700; font-size: var(--text-3xl); line-height: var(--lh-3xl); letter-spacing: -0.01em; color: var(--foreground); }
+.t-h3        { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); line-height: var(--lh-2xl); color: var(--foreground); }
+.t-h4        { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl);  line-height: var(--lh-xl);  color: var(--foreground); }
+.t-lead      { font-family: var(--font-sans);    font-weight: 400; font-size: var(--text-lg);  line-height: var(--lh-lg);  color: var(--muted-foreground); }
+.t-p         { font-family: var(--font-sans);    font-weight: 400; font-size: var(--text-md);  line-height: var(--lh-md);  color: var(--foreground); }
+.t-p-muted   { font-family: var(--font-sans);    font-weight: 400; font-size: var(--text-md);  line-height: var(--lh-md);  color: var(--muted-foreground); }
+.t-small     { font-family: var(--font-sans);    font-weight: 400; font-size: var(--text-base); line-height: var(--lh-base); color: var(--foreground); }
+.t-muted     { font-family: var(--font-sans);    font-weight: 400; font-size: var(--text-base); line-height: var(--lh-base); color: var(--muted-foreground); }
+.t-caption   { font-family: var(--font-sans);    font-weight: 400; font-size: var(--text-xs);  line-height: var(--lh-xs);  color: var(--muted-foreground); }
+.t-label     { font-family: var(--font-sans);    font-weight: 500; font-size: var(--text-base); line-height: var(--lh-base); color: var(--foreground); }
+.t-button    { font-family: var(--font-ui);      font-weight: 500; font-size: var(--text-base); line-height: 1;             letter-spacing: 0; }
+.t-badge     { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xs);  line-height: var(--lh-xs);  color: var(--foreground); }
+.t-mono      { font-family: var(--font-mono);    font-weight: 500; font-size: var(--text-xs);  line-height: var(--lh-xs); }
+.t-code      { font-family: var(--font-mono);    font-weight: 400; font-size: var(--text-base); line-height: var(--lh-base); background: var(--muted); padding: 2px 6px; border-radius: var(--radius-sm); }
+
+/* =============================================================
+   Base reset that most cards in this kit rely on.
+   ============================================================= */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a { color: inherit; text-decoration: none; }

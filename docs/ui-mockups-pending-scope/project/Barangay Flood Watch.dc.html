@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/initial-1ba1da47-310b-49ff-9b85-37116e47e33c/colors_and_type.css">
+<link rel="stylesheet" href="_ds/initial-1ba1da47-310b-49ff-9b85-37116e47e33c/shadcn.css">
+<script src="_ds/initial-1ba1da47-310b-49ff-9b85-37116e47e33c/_ds_bundle.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<style>
+body{margin:0;background:#e8e6e2;font-family:'Geist',Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#2563eb;text-decoration:none}
+a:hover{color:#1d4ed8;text-decoration:underline;text-underline-offset:3px}
+@keyframes om-fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes om-slide{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes om-scale{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes om-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes om-spin{to{transform:rotate(360deg)}}
+@keyframes om-shakeA{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes om-shakeB{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes om-count{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
+</style>
+</helmet>
+
+
+
+<div style="--app-primary:{{ primaryVar }};min-height:100vh;padding:26px 26px 60px;display:flex;flex-direction:column;align-items:center;gap:18px">
+
+  <div style="width:100%;max-width:1332px;background:#fff;border:1px solid rgb(229,229,229);border-radius:14px;padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:20px;box-shadow:0 1px 2px rgba(0,0,0,.05)">
+    <div style="display:flex;flex-direction:column;gap:2px;margin-right:auto">
+      <span style="font:600 13px/18px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">Barangay Flood Watch — interactive mockup</span>
+      <span style="font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">Barangay Magliman, San Fernando, Pampanga · real OpenStreetMap geometry</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <span style="font:500 10px/12px 'Geist',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgb(140,140,140)">Viewport</span>
+      <div style="display:flex;gap:4px;background:rgb(245,245,245);padding:3px;border-radius:9px">
+        <sc-for list="{{ ctlVp }}" as="o" hint-placeholder-count="2">
+          <button type="button" onClick="{{ o.onClick }}" class="t-button" style="border:0;height:28px;padding:0 12px;border-radius:7px;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <span style="font:500 10px/12px 'Geist',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgb(140,140,140)">Signed in as</span>
+      <div style="display:flex;gap:4px;background:rgb(245,245,245);padding:3px;border-radius:9px">
+        <sc-for list="{{ ctlRole }}" as="o" hint-placeholder-count="2">
+          <button type="button" onClick="{{ o.onClick }}" class="t-button" style="border:0;height:28px;padding:0 12px;border-radius:7px;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <span style="font:500 10px/12px 'Geist',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgb(140,140,140)">Screen</span>
+      <select class="input" onChange="{{ onScreenSelect }}" value="{{ screen }}" style="height:34px;width:180px;appearance:none;background-image:none;font-size:13px;cursor:pointer">
+        <sc-for list="{{ screenOpts }}" as="o" hint-placeholder-count="6">
+          <option value="{{ o.v }}">{{ o.label }}</option>
+        </sc-for>
+      </select>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <span style="font:500 10px/12px 'Geist',system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgb(140,140,140)">State</span>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <sc-for list="{{ ctlState }}" as="o" hint-placeholder-count="5">
+          <button type="button" onClick="{{ o.onClick }}" class="t-button" style="height:28px;padding:0 11px;border-radius:9999px;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }};border:1px solid {{ o.bc }}">{{ o.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="width:{{ frameW }};height:{{ frameH }};border-radius:{{ frameRadius }};border:{{ frameBorder }};background:#fff;overflow:hidden;box-shadow:0 22px 48px -18px rgba(0,0,0,.34),0 4px 12px rgba(0,0,0,.06);position:relative;display:flex;flex-direction:column;flex:none">
+
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+      <div style="height:34px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:#fff;font:600 12px/1 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">
+        <span>4:12</span>
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="width:16px;height:9px;border-radius:2px;background:rgb(10,10,10)"></span>
+          <span style="width:13px;height:9px;border-radius:2px;background:rgb(10,10,10)"></span>
+          <span style="width:22px;height:10px;border-radius:3px;border:1.4px solid rgb(10,10,10);position:relative"></span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDesktop }}">
+      <div style="height:40px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;background:rgb(250,250,250);border-bottom:1px solid rgb(229,229,229)">
+        <div style="display:flex;gap:6px">
+          <span style="width:11px;height:11px;border-radius:9999px;background:#ff5f57"></span>
+          <span style="width:11px;height:11px;border-radius:9999px;background:#febc2e"></span>
+          <span style="width:11px;height:11px;border-radius:9999px;background:#28c840"></span>
+        </div>
+        <div style="flex:1;max-width:420px;height:26px;border-radius:9999px;background:#fff;border:1px solid rgb(229,229,229);display:flex;align-items:center;padding:0 12px;font:400 11px/1 'Geist Mono',ui-monospace,monospace;color:rgb(115,115,115)">flood.magliman.gov.ph</div>
+      </div>
+    </sc-if>
+
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column;position:relative;background:rgb(250,250,250)">
+
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+        <header style="flex:none;height:56px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#fff;border-bottom:1px solid rgb(229,229,229);z-index:30">
+          <button type="button" onClick="{{ openDrawer }}" aria-label="Open menu" class="btn btn-ghost btn-icon" style="width:44px;height:44px;flex:none">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          </button>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+            <span style="font:700 15px/18px 'Geist',system-ui,sans-serif;color:rgb(10,10,10);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.brand }}</span>
+            <span style="font:400 11px/14px 'Geist',system-ui,sans-serif;color:rgb(115,115,115);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Brgy. Magliman · San Fernando</span>
+          </div>
+          <button type="button" onClick="{{ goAlerts }}" aria-label="Alerts" class="btn btn-ghost btn-icon" style="width:44px;height:44px;flex:none;position:relative">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0112 0c0 6 2.5 8 2.5 8h-17S6 15 6 9z"></path><path d="M10.2 21a2.2 2.2 0 003.6 0"></path></svg>
+            <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
+              <span style="position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9999px;background:#dc2626;color:#fff;font:700 10px/17px 'Geist',system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px #fff">{{ unread }}</span>
+            </sc-if>
+          </button>
+        </header>
+      </sc-if>
+
+      <sc-if value="{{ isDesktop }}">
+        <header style="flex:none;height:64px;display:flex;align-items:center;gap:26px;padding:0 24px;background:#fff;border-bottom:1px solid rgb(229,229,229);z-index:30">
+          <div style="display:flex;align-items:center;gap:11px">
+            <span style="width:34px;height:34px;border-radius:10px;background:#0f172a;display:flex;align-items:center;justify-content:center;color:#fff">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z"></path><circle cx="12" cy="10" r="2.4"></circle></svg>
+            </span>
+            <div style="display:flex;flex-direction:column;gap:1px">
+              <span style="font:700 15px/18px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ t.brand }}</span>
+              <span style="font:400 11px/14px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ t.place }}</span>
+            </div>
+          </div>
+          <nav style="display:flex;align-items:center;gap:4px">
+            <sc-for list="{{ deskNav }}" as="n" hint-placeholder-count="3">
+              <button type="button" onClick="{{ n.onClick }}" style="border:0;background:{{ n.bg }};color:{{ n.fg }};height:34px;padding:0 12px;border-radius:9px;cursor:pointer;font:500 14px/1 Inter,system-ui,sans-serif;display:flex;align-items:center;gap:7px">
+                {{ n.label }}
+                <sc-if value="{{ n.badge }}">
+                  <span style="min-width:18px;height:18px;padding:0 5px;border-radius:9999px;background:#dc2626;color:#fff;font:700 10px/18px 'Geist',system-ui,sans-serif;text-align:center">{{ n.badgeText }}</span>
+                </sc-if>
+              </button>
+            </sc-for>
+          </nav>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+            <sc-if value="{{ offline }}">
+              <span style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:9999px;background:#fef3c7;color:#92400e;font:600 12px/1 'Geist',system-ui,sans-serif">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2.5 3.5l18.5 18.5M5.2 11.4a10.5 10.5 0 019.6-2.7M8.7 15.4a5.4 5.4 0 014.8-1M12 19.2h.01"></path></svg>{{ t.offline.chip }}
+              </span>
+            </sc-if>
+            <div style="display:flex;gap:2px;background:rgb(245,245,245);padding:3px;border-radius:9999px">
+              <sc-for list="{{ ctlLang }}" as="o" hint-placeholder-count="2">
+                <button type="button" onClick="{{ o.onClick }}" style="border:0;height:26px;padding:0 10px;border-radius:9999px;cursor:pointer;font:600 11px/1 Inter,system-ui,sans-serif;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+              </sc-for>
+            </div>
+            <button type="button" onClick="{{ goSubmit }}" class="btn btn-lg" style="min-height:40px;background:var(--app-primary,#171717);color:#fafafa;gap:8px">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>{{ t.nav.submit }}
+            </button>
+            <button type="button" onClick="{{ openDrawer }}" class="avatar" aria-label="Account menu" style="width:36px;height:36px;border:1px solid rgb(229,229,229);cursor:pointer;font:600 13px/1 'Geist',system-ui,sans-serif;background:rgb(245,245,245)">{{ initials }}</button>
+          </div>
+        </header>
+      </sc-if>
+
+      <sc-if value="{{ offline }}">
+        <div style="flex:none;display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;animation:om-slide 300ms cubic-bezier(.4,0,.2,1) both">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" style="flex:none;margin-top:1px"><path d="M2.5 3.5l18.5 18.5M5.2 11.4a10.5 10.5 0 019.6-2.7M8.7 15.4a5.4 5.4 0 014.8-1M12 19.2h.01"></path></svg>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <span style="font:500 13px/18px 'Geist',system-ui,sans-serif">{{ t.offline.banner }}</span>
+            <sc-if value="{{ hasQueue }}">
+              <span style="font:400 12px/16px 'Geist',system-ui,sans-serif;color:#b45309">{{ queueLine }}</span>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:none;padding:10px 12px;background:#fff;border-bottom:1px solid rgb(229,229,229)">
+          <div onClick="{{ goAlerts }}" role="button" style="cursor:pointer;border:1px solid {{ banner.border }};background:{{ banner.bg }};border-left:4px solid {{ banner.color }};border-radius:12px;padding:12px 12px 12px 13px;display:flex;gap:11px;align-items:flex-start;animation:om-slide 300ms cubic-bezier(.4,0,.2,1) both">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ banner.color }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><path d="M12 3.5l9.2 16.5H2.8L12 3.5z"></path><path d="M12 9.5v5M12 17.4h.01"></path></svg>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="height:19px;padding:0 8px;border-radius:9999px;background:{{ banner.color }};color:#fff;font:700 10px/19px 'Geist',system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase">{{ banner.prioLabel }}</span>
+                <span style="font:600 14px/19px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ banner.title }}</span>
+              </div>
+              <span style="font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(82,82,82);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ banner.msg }}</span>
+            </div>
+            <button type="button" onClick="{{ dismissBanner }}" aria-label="Dismiss alert" class="btn btn-ghost btn-icon-sm" style="flex:none;color:rgb(115,115,115)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+
+        <sc-if value="{{ sDash }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:1;min-height:0;display:flex;flex-direction:{{ dashDir }}">
+            <div style="flex:{{ mapFlex }};min-height:{{ mapMinH }};position:relative;z-index:0;isolation:isolate;border-right:{{ mapBorder }}">
+              <x-import component-from-global-scope="barangay-map" from="./barangay-map.js" hint-size="100%,100%" style="position:absolute;inset:0" mode="dashboard" pins="{{ pinsJson }}" zones="{{ zonesJson }}" selected="{{ selectedId }}" labels="{{ labelsAttr }}" loading="{{ mapLoading }}"></x-import>
+              <sc-if value="{{ isDesktop }}">
+              <div style="position:absolute;left:10px;top:10px;z-index:400;background:rgba(255,255,255,.95);border:1px solid rgb(229,229,229);border-radius:10px;padding:9px 11px;box-shadow:0 1px 2px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:6px">
+                <span style="font:600 10px/12px 'Geist',system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;color:rgb(115,115,115)">{{ t.dash.legend }}</span>
+                <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:7px">
+                    <span style="width:12px;height:12px;border-radius:9999px;background:{{ l.color }};border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)"></span>
+                    <span style="font:400 11px/14px 'Geist',system-ui,sans-serif;color:rgb(38,38,38)">{{ l.label }}</span>
+                  </div>
+                </sc-for>
+                <div style="display:flex;align-items:center;gap:7px;padding-top:4px;border-top:1px solid rgb(240,240,240)">
+                  <span style="width:12px;height:12px;border-radius:3px;background:#16a34a;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.12)"></span>
+                  <span style="font:400 11px/14px 'Geist',system-ui,sans-serif;color:rgb(38,38,38)">{{ t.dash.safeZones }}</span>
+                </div>
+              </div>
+              </sc-if>
+            </div>
+
+            <div style="flex:{{ listFlex }};min-height:0;display:flex;flex-direction:column;background:#fff;width:{{ listW }}">
+              <div style="flex:none;padding:14px 16px 12px;border-bottom:1px solid rgb(229,229,229);display:flex;flex-direction:column;gap:11px">
+                <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+                  <span style="font:700 17px/22px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ t.dash.live }}</span>
+                  <span style="display:flex;align-items:center;gap:5px;font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">
+                    <span style="width:6px;height:6px;border-radius:9999px;background:#16a34a;animation:om-pulse 2s ease-in-out infinite"></span>{{ t.dash.updated }}
+                  </span>
+                  <span style="margin-left:auto;font:500 12px/16px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ countLine }}</span>
+                </div>
+                <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px">
+                  <sc-for list="{{ levelChips }}" as="c" hint-placeholder-count="5">
+                    <button type="button" onClick="{{ c.onClick }}" style="flex:none;height:32px;padding:0 12px;border-radius:9999px;cursor:pointer;display:flex;align-items:center;gap:6px;font:500 13px/1 Inter,system-ui,sans-serif;background:{{ c.bg }};color:{{ c.fg }};border:1px solid {{ c.bc }}">
+                      <sc-if value="{{ c.hasDot }}">
+                        <span style="width:9px;height:9px;border-radius:9999px;background:{{ c.dot }}"></span>
+                      </sc-if>
+                      {{ c.label }}
+                    </button>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1;position:relative">
+                    <select class="input" onChange="{{ onRecency }}" value="{{ filterRecency }}" style="height:36px;appearance:none;padding-right:30px;font-size:13px;cursor:pointer">
+                      <sc-for list="{{ recencyOpts }}" as="o" hint-placeholder-count="3">
+                        <option value="{{ o.v }}">{{ o.label }}</option>
+                      </sc-for>
+                    </select>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgb(115,115,115)" stroke-width="2" stroke-linecap="round" style="position:absolute;right:10px;top:11px;pointer-events:none"><path d="M6 9.5l6 6 6-6"></path></svg>
+                  </div>
+                  <div style="flex:1;position:relative">
+                    <select class="input" onChange="{{ onSort }}" value="{{ sort }}" style="height:36px;appearance:none;padding-right:30px;font-size:13px;cursor:pointer">
+                      <sc-for list="{{ sortOpts }}" as="o" hint-placeholder-count="2">
+                        <option value="{{ o.v }}">{{ o.label }}</option>
+                      </sc-for>
+                    </select>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgb(115,115,115)" stroke-width="2" stroke-linecap="round" style="position:absolute;right:10px;top:11px;pointer-events:none"><path d="M6 9.5l6 6 6-6"></path></svg>
+                  </div>
+                </div>
+              </div>
+
+              <div style="flex:1;min-height:0;overflow-y:auto;padding:12px 16px 96px;display:flex;flex-direction:column;gap:10px">
+
+                <sc-if value="{{ isLoading }}">
+                  <sc-for list="{{ skeletons }}" as="s" hint-placeholder-count="4">
+                    <div style="border:1px solid rgb(240,240,240);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;animation:om-pulse 1.5s ease-in-out infinite">
+                      <div style="display:flex;gap:8px;align-items:center">
+                        <span style="width:88px;height:20px;border-radius:9999px;background:rgb(240,240,240)"></span>
+                        <span style="width:60px;height:12px;border-radius:6px;background:rgb(244,244,244);margin-left:auto"></span>
+                      </div>
+                      <span style="width:72%;height:15px;border-radius:6px;background:rgb(238,238,238)"></span>
+                      <span style="width:94%;height:11px;border-radius:6px;background:rgb(244,244,244)"></span>
+                      <div style="display:flex;gap:8px;padding-top:4px">
+                        <span style="width:64px;height:30px;border-radius:9px;background:rgb(244,244,244)"></span>
+                        <span style="width:64px;height:30px;border-radius:9px;background:rgb(244,244,244)"></span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+
+                <sc-if value="{{ isEmpty }}">
+                  <div style="margin:22px 4px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:28px 20px;border:1px dashed rgb(229,229,229);border-radius:14px;background:rgb(250,250,250)">
+                    <span style="width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid rgb(229,229,229);display:flex;align-items:center;justify-content:center;color:rgb(140,140,140)">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.2l5-2 6 2 5-2v13.6l-5 2-6-2-5 2z"></path><path d="M9 4.2v13.6M15 6.2v13.6"></path></svg>
+                    </span>
+                    <span style="font:600 15px/20px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ t.dash.empty }}</span>
+                    <span style="font:400 13px/19px 'Geist',system-ui,sans-serif;color:rgb(115,115,115);max-width:280px;text-wrap:pretty">{{ t.dash.emptySub }}</span>
+                    <button type="button" onClick="{{ goSubmit }}" class="btn btn-lg" style="min-height:44px;background:var(--app-primary,#171717);color:#fafafa;margin-top:2px">{{ t.dash.beFirst }}</button>
+                  </div>
+                </sc-if>
+
+                <sc-for list="{{ reports }}" as="r" hint-placeholder-count="4">
+                  <div style="border:1px solid {{ r.cardBorder }};border-radius:12px;padding:{{ cardPad }};background:#fff;display:flex;flex-direction:column;gap:9px;box-shadow:{{ r.cardShadow }};animation:om-fade 220ms cubic-bezier(.4,0,.2,1) both">
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                      <span style="height:22px;padding:0 10px;border-radius:9999px;background:{{ r.color }};color:{{ r.fg }};font:700 11px/22px 'Geist',system-ui,sans-serif;letter-spacing:.02em">{{ r.levelLabel }}</span>
+                      <sc-if value="{{ r.isNew }}">
+                        <span style="height:22px;padding:0 8px;border-radius:9999px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font:700 10px/20px 'Geist',system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;animation:om-pulse 2s ease-in-out infinite">{{ t.report.new }}</span>
+                      </sc-if>
+                      <sc-if value="{{ r.verified }}">
+                        <span style="display:flex;align-items:center;gap:4px;color:#15803d;font:600 11px/1 'Geist',system-ui,sans-serif">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8.2 12.4l2.8 2.8 4.8-5.8"></path></svg>{{ t.report.verified }}
+                        </span>
+                      </sc-if>
+                      <span style="margin-left:auto;display:flex;align-items:center;gap:4px;font:400 11px/14px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.4V12l3 2"></path></svg>{{ r.ago }}
+                      </span>
+                    </div>
+                    <button type="button" onClick="{{ r.onOpen }}" style="border:0;background:transparent;padding:0;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px">
+                      <span style="font:600 15px/20px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ r.name }}</span>
+                      <span style="font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(82,82,82);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-wrap:pretty">{{ r.desc }}</span>
+                    </button>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <button type="button" onClick="{{ r.onUp }}" aria-label="Upvote" style="min-height:36px;padding:0 11px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 13px/1 Inter,system-ui,sans-serif;background:{{ r.upBg }};color:{{ r.upFg }};border:1px solid {{ r.upBc }}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="{{ r.upFill }}" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10h3l4-7.2A1.9 1.9 0 0114 5.3L12.6 10H19a2 2 0 011.95 2.45l-1.5 6.5A2 2 0 0117.5 21H4z"></path></svg>
+                        <span style="animation:{{ r.upAnim }}">{{ r.up }}</span>
+                      </button>
+                      <button type="button" onClick="{{ r.onDown }}" aria-label="Downvote" style="min-height:36px;padding:0 11px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 13px/1 Inter,system-ui,sans-serif;background:{{ r.downBg }};color:{{ r.downFg }};border:1px solid {{ r.downBc }}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="{{ r.downFill }}" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v11h3l4 7.2A1.9 1.9 0 0014 18.7L12.6 14H19a2 2 0 001.95-2.45l-1.5-6.5A2 2 0 0017.5 3H4z"></path></svg>
+                        <span style="animation:{{ r.downAnim }}">{{ r.down }}</span>
+                      </button>
+                      <sc-if value="{{ r.didVote }}">
+                        <span style="font:500 11px/14px 'Geist',system-ui,sans-serif;color:#15803d">{{ r.votedLabel }}</span>
+                      </sc-if>
+                      <button type="button" onClick="{{ r.onOpen }}" style="margin-left:auto;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;gap:3px;font:500 13px/1 Inter,system-ui,sans-serif;color:rgb(64,64,64);min-height:36px;padding:0 4px">
+                        {{ t.dash.details }}
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9.5 6l6 6-6 6"></path></svg>
+                      </button>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 18px;background:linear-gradient(to top,#fff 46%,rgba(255,255,255,0));z-index:25">
+              <button type="button" onClick="{{ goSubmit }}" class="btn btn-lg" style="width:100%;min-height:50px;font-size:15px;background:var(--app-primary,#171717);color:#fafafa;gap:9px;box-shadow:0 6px 16px -4px rgba(0,0,0,.35)">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>{{ t.nav.submit }}
+              </button>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ sSubmit }}">
+          <div style="flex:1;min-height:0;overflow-y:auto">
+            <div style="max-width:{{ formMax }};margin:0 auto;padding:{{ pagePad }};display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <button type="button" onClick="{{ goDash }}" aria-label="Back" class="btn btn-outline btn-icon" style="width:40px;height:40px;flex:none">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5l-7 7 7 7M4.4 12H20"></path></svg>
+                </button>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font:700 22px/28px 'Geist',system-ui,sans-serif;color:rgb(10,10,10);letter-spacing:-.01em">{{ t.submit.title }}</span>
+                  <span style="font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ t.submit.sub }}</span>
+                </div>
+              </div>
+
+              <div class="card" style="gap:20px;padding:20px">
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <span class="label" style="margin:0">{{ t.submit.where }}</span>
+                  <div style="height:230px;border-radius:10px;overflow:hidden;border:1px solid {{ form.pinBorder }};position:relative;z-index:0;isolation:isolate">
+                    <x-import component-from-global-scope="barangay-map" from="./barangay-map.js" hint-size="100%,230px" style="position:absolute;inset:0" mode="picker" zones="{{ zonesJson }}" labels="0"></x-import>
+                  </div>
+                  <span style="font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ t.submit.mapHint }}</span>
+                  <div style="display:flex;gap:10px">
+                    <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                      <label class="label" style="margin:0;font-size:12px;color:rgb(115,115,115)" for="f-lat">{{ t.submit.lat }}</label>
+                      <input id="f-lat" class="input" value="{{ form.lat }}" onChange="{{ onLat }}" placeholder="15.0286" style="min-height:44px;font-family:'Geist Mono',ui-monospace,monospace;font-size:13px">
+                    </div>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                      <label class="label" style="margin:0;font-size:12px;color:rgb(115,115,115)" for="f-lng">{{ t.submit.lng }}</label>
+                      <input id="f-lng" class="input" value="{{ form.lng }}" onChange="{{ onLng }}" placeholder="120.6682" style="min-height:44px;font-family:'Geist Mono',ui-monospace,monospace;font-size:13px">
+                    </div>
+                  </div>
+                  <sc-if value="{{ form.errPin }}">
+                    <span style="display:flex;align-items:center;gap:6px;font:500 12px/16px 'Geist',system-ui,sans-serif;color:#dc2626;animation:{{ form.shake }}">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.6v5.2M12 16.4h.01"></path></svg>{{ t.err.pin }}
+                    </span>
+                  </sc-if>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <label class="label" style="margin:0" for="f-name">{{ t.submit.name }}</label>
+                  <input id="f-name" class="input" value="{{ form.name }}" onChange="{{ onName }}" placeholder="{{ t.submit.namePh }}" style="min-height:44px;font-size:15px;border-color:{{ form.nameBorder }}">
+                  <sc-if value="{{ form.errName }}">
+                    <span style="display:flex;align-items:center;gap:6px;font:500 12px/16px 'Geist',system-ui,sans-serif;color:#dc2626;animation:{{ form.shake }}">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.6v5.2M12 16.4h.01"></path></svg>{{ t.err.name }}
+                    </span>
+                  </sc-if>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:9px">
+                  <span class="label" style="margin:0">{{ t.submit.level }}</span>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+                    <sc-for list="{{ levelOpts }}" as="l" hint-placeholder-count="4">
+                      <button type="button" onClick="{{ l.onClick }}" aria-pressed="{{ l.pressed }}" style="min-height:78px;border-radius:11px;cursor:pointer;padding:11px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;background:{{ l.bg }};border:{{ l.border }};box-shadow:{{ l.shadow }}">
+                        <span style="display:flex;align-items:center;gap:8px">
+                          <span style="width:22px;height:22px;border-radius:9999px;background:{{ l.color }};border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;font:700 10px/1 'Geist',system-ui,sans-serif;color:{{ l.fg }}">{{ l.letter }}</span>
+                          <span style="font:600 14px/18px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ l.label }}</span>
+                        </span>
+                        <span style="font:400 11px/15px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ l.hint }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ form.errLevel }}">
+                    <span style="display:flex;align-items:center;gap:6px;font:500 12px/16px 'Geist',system-ui,sans-serif;color:#dc2626;animation:{{ form.shake }}">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.6v5.2M12 16.4h.01"></path></svg>{{ t.err.level }}
+                    </span>
+                  </sc-if>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <label class="label" style="margin:0" for="f-desc">{{ t.submit.desc }}</label>
+                  <textarea id="f-desc" class="input" value="{{ form.desc }}" onChange="{{ onDesc }}" placeholder="{{ t.submit.descPh }}" rows="3" style="min-height:84px;padding:10px 12px;resize:vertical;font-size:15px;line-height:21px"></textarea>
+                  <span style="align-self:flex-end;font:400 11px/14px 'Geist Mono',ui-monospace,monospace;color:rgb(140,140,140)">{{ form.count }}</span>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <span class="label" style="margin:0">{{ t.submit.photo }}</span>
+                  <button type="button" onClick="{{ onPhoto }}" style="min-height:150px;border-radius:11px;border:1px dashed {{ form.photoBorder }};background:{{ form.photoBg }};cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:16px">
+                    <span style="width:40px;height:40px;border-radius:11px;background:#fff;border:1px solid rgb(229,229,229);display:flex;align-items:center;justify-content:center;color:rgb(115,115,115)">
+                      <sc-if value="{{ form.photoPending }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16.5V4M7.8 8.2L12 4l4.2 4.2M4 16.4V19a1.4 1.4 0 001.4 1.4h13.2A1.4 1.4 0 0020 19v-2.6"></path></svg></sc-if><sc-if value="{{ form.photoDone }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2.2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M4 18l5-4.8 3.6 3.6 2.8-2.6L20.6 18"></path></svg></sc-if>
+                    </span>
+                    <span style="font:600 14px/18px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ form.photoLabel }}</span>
+                    <span style="font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgb(115,115,115);text-align:center">{{ form.photoHint }}</span>
+                  </button>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:9px;padding-top:2px">
+                  <button type="button" onClick="{{ onSubmitReport }}" class="btn btn-lg" style="width:100%;min-height:50px;font-size:15px;background:{{ form.sendBg }};color:{{ form.sendFg }};gap:9px;cursor:{{ form.sendCursor }}">
+                    <sc-if value="{{ form.sending }}">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="animation:om-spin 700ms linear infinite"><path d="M12 3.2a8.8 8.8 0 018.8 8.8"></path></svg>
+                    </sc-if>
+                    {{ form.sendLabel }}
+                  </button>
+                  <sc-if value="{{ offline }}">
+                    <span style="text-align:center;font:400 12px/16px 'Geist',system-ui,sans-serif;color:#b45309">{{ t.submit.queue }}</span>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sAlerts }}">
+          <div style="flex:1;min-height:0;overflow-y:auto">
+            <div style="max-width:{{ formMax }};margin:0 auto;padding:{{ pagePad }};display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <button type="button" onClick="{{ goDash }}" aria-label="Back" class="btn btn-outline btn-icon" style="width:40px;height:40px;flex:none">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5l-7 7 7 7M4.4 12H20"></path></svg>
+                </button>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font:700 22px/28px 'Geist',system-ui,sans-serif;color:rgb(10,10,10);letter-spacing:-.01em">{{ t.alerts.title }}</span>
+                  <span style="font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ t.alerts.sub }}</span>
+                </div>
+              </div>
+              <sc-for list="{{ alerts }}" as="a" hint-placeholder-count="4">
+                <div style="background:#fff;border:1px solid rgb(229,229,229);border-left:4px solid {{ a.color }};border-radius:12px;padding:15px 15px 15px 16px;display:flex;gap:12px;align-items:flex-start">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px">
+                    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                      <span style="height:20px;padding:0 8px;border-radius:9999px;background:{{ a.color }};color:#fff;font:700 10px/20px 'Geist',system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase">{{ a.prioLabel }}</span>
+                      <span style="height:20px;padding:0 8px;border-radius:9999px;background:rgb(245,245,245);color:rgb(64,64,64);font:600 11px/20px 'Geist',system-ui,sans-serif">{{ a.typeLabel }}</span>
+                      <span style="margin-left:auto;font:400 11px/14px 'Geist',system-ui,sans-serif;color:rgb(140,140,140)">{{ a.ago }}</span>
+                    </div>
+                    <span style="font:600 16px/22px 'Geist',system-ui,sans-serif;color:rgb(10,10,10);text-wrap:pretty">{{ a.title }}</span>
+                    <span style="font:400 14px/21px 'Geist',system-ui,sans-serif;color:rgb(64,64,64);text-wrap:pretty">{{ a.msg }}</span>
+                    <span style="font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgb(140,140,140)">{{ a.fromLine }}</span>
+                  </div>
+                  <button type="button" onClick="{{ a.onDismiss }}" aria-label="Dismiss" class="btn btn-ghost btn-icon-sm" style="flex:none;color:rgb(140,140,140)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                  </button>
+                </div>
+              </sc-for>
+              <sc-if value="{{ noAlerts }}">
+                <div style="padding:34px 20px;border:1px dashed rgb(229,229,229);border-radius:14px;background:#fff;text-align:center;font:400 14px/20px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ t.alerts.empty }}</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sAdmin }}">
+          <div style="flex:1;min-height:0;overflow-y:auto">
+            <div style="max-width:{{ adminMax }};margin:0 auto;padding:{{ pagePad }};display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <span style="font:700 22px/28px 'Geist',system-ui,sans-serif;color:rgb(10,10,10);letter-spacing:-.01em">{{ t.admin.title }}</span>
+                <span style="font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ t.admin.sub }}</span>
+              </div>
+              <div style="display:flex;gap:4px;background:rgb(245,245,245);padding:4px;border-radius:11px;overflow-x:auto">
+                <sc-for list="{{ adminTabs }}" as="tb" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ tb.onClick }}" style="flex:none;border:0;min-height:38px;padding:0 14px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:7px;font:500 14px/1 Inter,system-ui,sans-serif;background:{{ tb.bg }};color:{{ tb.fg }};box-shadow:{{ tb.sh }}">
+                    <sc-if value="{{ tb.isB }}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 10.6v2.8a1.2 1.2 0 001.2 1.2h1.8l6 3.8V6.6l-6 3.8H4.6a1.2 1.2 0 00-1.2 1.2z"></path><path d="M16.4 8.4a5.2 5.2 0 010 7.2"></path></svg></sc-if><sc-if value="{{ tb.isZ }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9v-6z"></path></svg></sc-if><sc-if value="{{ tb.isR }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2.4"></circle><circle cx="18" cy="6" r="2.4"></circle><path d="M8.6 18H14a4 4 0 000-8H9"></path></svg></sc-if>{{ tb.label }}
+                  </button>
+                </sc-for>
+              </div>
+
+              <sc-if value="{{ tabBroadcast }}">
+                <div class="card" style="gap:18px;padding:20px">
+                  <div style="display:flex;flex-direction:column;gap:7px">
+                    <label class="label" style="margin:0" for="b-title">{{ t.admin.bTitle }}</label>
+                    <input id="b-title" class="input" value="{{ bcast.title }}" onChange="{{ onBTitle }}" placeholder="{{ t.admin.bTitlePh }}" style="min-height:44px;font-size:15px;border-color:{{ bcast.titleBorder }}">
+                    <sc-if value="{{ bcast.errTitle }}">
+                      <span style="display:flex;align-items:center;gap:6px;font:500 12px/16px 'Geist',system-ui,sans-serif;color:#dc2626;animation:{{ bcast.shake }}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.6v5.2M12 16.4h.01"></path></svg>{{ t.admin.errTitle }}
+                      </span>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:7px">
+                    <label class="label" style="margin:0" for="b-msg">{{ t.admin.bMsg }}</label>
+                    <textarea id="b-msg" class="input" value="{{ bcast.msg }}" onChange="{{ onBMsg }}" placeholder="{{ t.admin.bMsgPh }}" rows="4" style="min-height:104px;padding:10px 12px;resize:vertical;font-size:15px;line-height:21px;border-color:{{ bcast.msgBorder }}"></textarea>
+                    <span style="align-self:flex-end;font:400 11px/14px 'Geist Mono',ui-monospace,monospace;color:rgb(140,140,140)">{{ bcast.count }}</span>
+                  </div>
+                  <div style="display:flex;gap:12px;flex-wrap:wrap">
+                    <div style="flex:1;min-width:190px;display:flex;flex-direction:column;gap:7px;position:relative">
+                      <label class="label" style="margin:0" for="b-type">{{ t.admin.bType }}</label>
+                      <select id="b-type" class="input" value="{{ bcast.type }}" onChange="{{ onBType }}" style="min-height:44px;appearance:none;padding-right:32px;font-size:15px;cursor:pointer">
+                        <sc-for list="{{ typeOpts }}" as="o" hint-placeholder-count="4">
+                          <option value="{{ o.v }}">{{ o.label }}</option>
+                        </sc-for>
+                      </select>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(115,115,115)" stroke-width="2" stroke-linecap="round" style="position:absolute;right:11px;bottom:14px;pointer-events:none"><path d="M6 9.5l6 6 6-6"></path></svg>
+                    </div>
+                    <div style="flex:1;min-width:190px;display:flex;flex-direction:column;gap:7px;position:relative">
+                      <label class="label" style="margin:0" for="b-prio">{{ t.admin.bPrio }}</label>
+                      <select id="b-prio" class="input" value="{{ bcast.prio }}" onChange="{{ onBPrio }}" style="min-height:44px;appearance:none;padding-right:32px;font-size:15px;cursor:pointer">
+                        <sc-for list="{{ prioOpts }}" as="o" hint-placeholder-count="4">
+                          <option value="{{ o.v }}">{{ o.label }}</option>
+                        </sc-for>
+                      </select>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(115,115,115)" stroke-width="2" stroke-linecap="round" style="position:absolute;right:11px;bottom:14px;pointer-events:none"><path d="M6 9.5l6 6 6-6"></path></svg>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:11px;background:{{ bcast.previewBg }};border:1px solid {{ bcast.previewBc }}">
+                    <span style="width:9px;height:9px;border-radius:9999px;background:{{ bcast.prioColor }};flex:none"></span>
+                    <span style="font:500 13px/18px 'Geist',system-ui,sans-serif;color:rgb(64,64,64)">{{ bcast.previewLine }}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <button type="button" onClick="{{ onBroadcast }}" class="btn btn-lg" style="width:100%;min-height:50px;font-size:15px;background:{{ bcast.sendBg }};color:#fff;gap:9px">
+                      <sc-if value="{{ bcast.sending }}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="animation:om-spin 700ms linear infinite"><path d="M12 3.2a8.8 8.8 0 018.8 8.8"></path></svg>
+                      </sc-if>
+                      {{ bcast.sendLabel }}
+                    </button>
+                    <span style="text-align:center;font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgb(140,140,140)">{{ t.admin.reach }}</span>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ tabZones }}">
+                <div style="display:flex;flex-direction:column;gap:12px">
+                  <button type="button" onClick="{{ openZoneDialog }}" class="btn btn-lg" style="align-self:flex-start;min-height:44px;background:var(--app-primary,#171717);color:#fafafa;gap:8px">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>{{ t.admin.addZone }}
+                  </button>
+                  <sc-for list="{{ zoneCards }}" as="z" hint-placeholder-count="3">
+                    <div style="background:#fff;border:1px solid rgb(229,229,229);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+                      <span style="width:38px;height:38px;border-radius:10px;background:{{ z.color }};color:#fff;display:flex;align-items:center;justify-content:center;flex:none">
+                        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9v-6z"></path></svg>
+                      </span>
+                      <div style="flex:1;min-width:180px;display:flex;flex-direction:column;gap:5px">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                          <span style="font:600 15px/20px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ z.name }}</span>
+                          <span style="height:20px;padding:0 8px;border-radius:9999px;background:rgb(245,245,245);color:rgb(64,64,64);font:600 10px/20px 'Geist',system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase">{{ z.typeLabel }}</span>
+                        </div>
+                        <span style="font:400 12px/17px 'Geist Mono',ui-monospace,monospace;color:rgb(115,115,115)">{{ z.coords }}</span>
+                        <span style="font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(82,82,82)">{{ z.meta }}</span>
+                      </div>
+                      <div style="display:flex;gap:8px">
+                        <button type="button" onClick="{{ openZoneDialog }}" class="btn btn-outline" style="min-height:38px;gap:7px">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L20 8l-4-4L4 16v4z"></path></svg>{{ t.report.edit }}
+                        </button>
+                        <button type="button" onClick="{{ z.onDelete }}" class="btn" style="min-height:38px;gap:7px;background:transparent;color:#dc2626;border:1px solid rgba(220,38,38,.32)">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5.2a1.2 1.2 0 011.2-1.2h2.6a1.2 1.2 0 011.2 1.2V7M6.5 7l.9 12.1a1.2 1.2 0 001.2 1.1h6.8a1.2 1.2 0 001.2-1.1L17.5 7"></path></svg>{{ t.report.delete }}
+                        </button>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ tabRoutes }}">
+                <div style="padding:38px 24px;border:1px dashed rgb(229,229,229);border-radius:14px;background:#fff;display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center">
+                  <span style="width:44px;height:44px;border-radius:12px;background:rgb(250,250,250);border:1px solid rgb(229,229,229);display:flex;align-items:center;justify-content:center;color:rgb(140,140,140)">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2.4"></circle><circle cx="18" cy="6" r="2.4"></circle><path d="M8.6 18H14a4 4 0 000-8H9"></path></svg>
+                  </span>
+                  <span style="font:600 15px/20px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ t.admin.routesEmpty }}</span>
+                  <span style="font:400 13px/19px 'Geist',system-ui,sans-serif;color:rgb(115,115,115);max-width:340px;text-wrap:pretty">{{ t.admin.routesSub }}</span>
+                  <button type="button" disabled="{{ true }}" class="btn btn-outline btn-lg" style="min-height:44px;margin-top:2px;opacity:.5;cursor:not-allowed">{{ t.admin.draw }}</button>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sAuth }}">
+          <div style="flex:1;min-height:0;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:24px 18px;background:rgb(250,250,250)">
+            <div style="width:100%;max-width:400px;display:flex;flex-direction:column;gap:22px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+                <span style="width:46px;height:46px;border-radius:13px;background:#0f172a;display:flex;align-items:center;justify-content:center;color:#fff">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z"></path><circle cx="12" cy="10" r="2.4"></circle></svg>
+                </span>
+                <span style="font:700 17px/22px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ t.brand }}</span>
+                <span style="font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ t.place }}</span>
+              </div>
+              <div class="card" style="gap:18px;padding:24px">
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <span style="font:700 20px/26px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ auth.title }}</span>
+                  <span style="font:400 13px/19px 'Geist',system-ui,sans-serif;color:rgb(115,115,115);text-wrap:pretty">{{ auth.sub }}</span>
+                </div>
+                <sc-if value="{{ sSignup }}">
+                  <div style="display:flex;flex-direction:column;gap:7px">
+                    <label class="label" style="margin:0" for="a-name">{{ t.auth.name }}</label>
+                    <input id="a-name" class="input" placeholder="Rosa Dizon" style="min-height:44px;font-size:15px">
+                  </div>
+                </sc-if>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <label class="label" style="margin:0" for="a-email">{{ t.auth.email }}</label>
+                  <input id="a-email" class="input" type="email" placeholder="rosa@gmail.com" style="min-height:44px;font-size:15px">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between">
+                    <label class="label" style="margin:0" for="a-pass">{{ t.auth.pass }}</label>
+                    <sc-if value="{{ sSignin }}">
+                      <a href="#" style="font:400 12px/16px 'Geist',system-ui,sans-serif">{{ t.auth.forgot }}</a>
+                    </sc-if>
+                  </div>
+                  <input id="a-pass" class="input" type="password" placeholder="••••••••" style="min-height:44px;font-size:15px">
+                </div>
+                <sc-if value="{{ sSignup }}">
+                  <div style="display:flex;flex-direction:column;gap:18px">
+                    <div style="display:flex;flex-direction:column;gap:7px">
+                      <label class="label" style="margin:0" for="a-conf">{{ t.auth.confirm }}</label>
+                      <input id="a-conf" class="input" type="password" placeholder="••••••••" style="min-height:44px;font-size:15px">
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:7px;position:relative">
+                      <label class="label" style="margin:0" for="a-brgy">{{ t.auth.brgy }}</label>
+                      <select id="a-brgy" class="input" style="min-height:44px;appearance:none;padding-right:32px;font-size:15px;cursor:pointer">
+                        <sc-for list="{{ brgyOpts }}" as="o" hint-placeholder-count="5">
+                          <option value="{{ o }}">{{ o }}</option>
+                        </sc-for>
+                      </select>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(115,115,115)" stroke-width="2" stroke-linecap="round" style="position:absolute;right:11px;bottom:14px;pointer-events:none"><path d="M6 9.5l6 6 6-6"></path></svg>
+                    </div>
+                  </div>
+                </sc-if>
+                <button type="button" onClick="{{ goDash }}" class="btn btn-lg" style="width:100%;min-height:48px;font-size:15px;background:var(--app-primary,#171717);color:#fafafa">{{ auth.cta }}</button>
+                <div style="text-align:center;font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">
+                  {{ auth.switchLead }}
+                  <button type="button" onClick="{{ auth.onSwitch }}" style="border:0;background:transparent;padding:0;cursor:pointer;font:600 13px/18px 'Geist',system-ui,sans-serif;color:#2563eb;text-decoration:underline;text-underline-offset:3px">{{ auth.switchCta }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ drawer }}">
+        <div style="position:absolute;inset:0;z-index:60;display:flex">
+          <div onClick="{{ closeDrawer }}" role="presentation" style="position:absolute;inset:0;background:rgba(0,0,0,.5);animation:om-fade 180ms ease both"></div>
+          <div style="position:relative;width:290px;height:100%;background:#fff;border-right:1px solid rgb(229,229,229);box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;flex-direction:column;animation:om-slide 200ms cubic-bezier(.4,0,.2,1) both">
+            <div style="padding:18px 16px;border-bottom:1px solid rgb(229,229,229);display:flex;align-items:center;gap:11px">
+              <span class="avatar" style="width:40px;height:40px;background:rgb(245,245,245);border:1px solid rgb(229,229,229);font:600 14px/1 'Geist',system-ui,sans-serif">{{ initials }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+                <span style="font:600 14px/19px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ userName }}</span>
+                <span style="font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgb(115,115,115)">{{ userRole }}</span>
+              </div>
+              <button type="button" onClick="{{ closeDrawer }}" aria-label="Close menu" class="btn btn-ghost btn-icon" style="width:40px;height:40px;flex:none">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+              </button>
+            </div>
+            <div style="padding:12px 12px 4px;display:flex;align-items:center;gap:9px">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgb(115,115,115)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="9"></circle><path d="M3.2 12h17.6M12 3a15 15 0 010 18M12 3a15 15 0 000 18"></path></svg>
+              <div style="display:flex;gap:3px;background:rgb(245,245,245);padding:3px;border-radius:9999px">
+                <sc-for list="{{ ctlLang }}" as="o" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ o.onClick }}" style="border:0;height:28px;padding:0 13px;border-radius:9999px;cursor:pointer;font:600 12px/1 Inter,system-ui,sans-serif;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.sh }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <nav style="flex:1;padding:10px;display:flex;flex-direction:column;gap:3px">
+              <sc-for list="{{ drawerItems }}" as="d" hint-placeholder-count="4">
+                <button type="button" onClick="{{ d.onClick }}" style="border:0;min-height:46px;padding:0 12px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:12px;background:{{ d.bg }};color:{{ d.fg }};font:500 15px/1 Inter,system-ui,sans-serif;text-align:left">
+                  <sc-if value="{{ d.isMap }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 6.2l5-2 6 2 5-2v13.6l-5 2-6-2-5 2z"></path><path d="M9 4.2v13.6M15 6.2v13.6"></path></svg></sc-if><sc-if value="{{ d.isSubmit }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 5v14M5 12h14"></path></svg></sc-if><sc-if value="{{ d.isAlerts }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M6 9a6 6 0 0112 0c0 6 2.5 8 2.5 8h-17S6 15 6 9z"></path><path d="M10.2 21a2.2 2.2 0 003.6 0"></path></svg></sc-if><sc-if value="{{ d.isAdmin }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="12" cy="12" r="3.2"></circle><path d="M12 2.4v2.6M12 19v2.6M2.4 12H5M19 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9"></path></svg></sc-if>
+                  <span style="flex:1">{{ d.label }}</span>
+                  <sc-if value="{{ d.badge }}">
+                    <span style="min-width:20px;height:20px;padding:0 6px;border-radius:9999px;background:#dc2626;color:#fff;font:700 11px/20px 'Geist',system-ui,sans-serif;text-align:center">{{ d.badgeText }}</span>
+                  </sc-if>
+                </button>
+              </sc-for>
+            </nav>
+            <div style="padding:10px;border-top:1px solid rgb(229,229,229)">
+              <button type="button" onClick="{{ goSignin }}" style="width:100%;border:0;min-height:46px;padding:0 12px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:12px;background:transparent;color:rgb(64,64,64);font:500 15px/1 Inter,system-ui,sans-serif">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3.2a1 1 0 011 1v14a1 1 0 01-1 1H15M10.5 16l4-4-4-4M14.5 12H3.5"></path></svg>{{ t.nav.signout }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showDetail }}">
+        <div style="position:absolute;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:18px">
+          <div onClick="{{ closeDetail }}" role="presentation" style="position:absolute;inset:0;background:rgba(0,0,0,.5);animation:om-fade 180ms ease both"></div>
+          <div style="position:relative;width:100%;max-width:500px;max-height:100%;overflow-y:auto;background:#fff;border-radius:12px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:24px;display:flex;flex-direction:column;gap:16px;animation:om-scale 200ms cubic-bezier(.4,0,.2,1) both">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:9px">
+                <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                  <span style="height:24px;padding:0 11px;border-radius:9999px;background:{{ detail.color }};color:{{ detail.fg }};font:700 12px/24px 'Geist',system-ui,sans-serif">{{ detail.levelLabel }}</span>
+                  <sc-if value="{{ detail.verified }}">
+                    <span style="display:flex;align-items:center;gap:4px;color:#15803d;font:600 11px/1 'Geist',system-ui,sans-serif">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8.2 12.4l2.8 2.8 4.8-5.8"></path></svg>{{ t.report.verified }}
+                    </span>
+                  </sc-if>
+                </div>
+                <span style="font:700 21px/27px 'Geist',system-ui,sans-serif;color:rgb(10,10,10);letter-spacing:-.01em;text-wrap:pretty">{{ detail.name }}</span>
+              </div>
+              <button type="button" onClick="{{ closeDetail }}" aria-label="Close" class="btn btn-ghost btn-icon" style="flex:none;color:rgb(115,115,115)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+              </button>
+            </div>
+
+            <sc-if value="{{ detail.hasPhoto }}">
+              <div style="width:100%;aspect-ratio:4/3;border-radius:11px;background:rgb(245,245,245);border:1px dashed rgb(214,214,214);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:rgb(140,140,140)">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2.2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M4 18l5-4.8 3.6 3.6 2.8-2.6L20.6 18"></path></svg>
+                <span style="font:500 12px/16px 'Geist',system-ui,sans-serif">{{ t.report.photo }}</span>
+              </div>
+            </sc-if>
+
+            <span style="font:400 15px/23px 'Geist',system-ui,sans-serif;color:rgb(38,38,38);text-wrap:pretty">{{ detail.desc }}</span>
+
+            <div style="display:flex;flex-direction:column;gap:7px;padding:13px 14px;border-radius:11px;background:rgb(250,250,250);border:1px solid rgb(240,240,240)">
+              <div style="display:flex;align-items:center;gap:8px;font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(82,82,82)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.4V12l3 2"></path></svg>{{ detail.agoLine }}
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(82,82,82)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"></circle><path d="M5 20.2a7 7 0 0114 0"></path></svg>{{ detail.byLine }}
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;font:400 12px/17px 'Geist Mono',ui-monospace,monospace;color:rgb(115,115,115)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z"></path><circle cx="12" cy="10" r="2.4"></circle></svg>{{ detail.coords }}
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+              <button type="button" onClick="{{ detail.onUp }}" style="min-height:44px;padding:0 15px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;font:600 14px/1 Inter,system-ui,sans-serif;background:{{ detail.upBg }};color:{{ detail.upFg }};border:1px solid {{ detail.upBc }}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="{{ detail.upFill }}" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10h3l4-7.2A1.9 1.9 0 0114 5.3L12.6 10H19a2 2 0 011.95 2.45l-1.5 6.5A2 2 0 0117.5 21H4z"></path></svg>
+                <span style="animation:{{ detail.upAnim }}">{{ detail.up }}</span>
+              </button>
+              <button type="button" onClick="{{ detail.onDown }}" style="min-height:44px;padding:0 15px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;font:600 14px/1 Inter,system-ui,sans-serif;background:{{ detail.downBg }};color:{{ detail.downFg }};border:1px solid {{ detail.downBc }}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="{{ detail.downFill }}" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v11h3l4 7.2A1.9 1.9 0 0014 18.7L12.6 14H19a2 2 0 001.95-2.45l-1.5-6.5A2 2 0 0017.5 3H4z"></path></svg>
+                <span style="animation:{{ detail.downAnim }}">{{ detail.down }}</span>
+              </button>
+              <sc-if value="{{ detail.didVote }}">
+                <span style="font:500 12px/16px 'Geist',system-ui,sans-serif;color:#15803d">{{ detail.votedLabel }}</span>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ detail.isOwner }}">
+              <div style="display:flex;gap:8px;padding-top:14px;border-top:1px solid rgb(240,240,240)">
+                <button type="button" onClick="{{ goSubmit }}" class="btn btn-outline" style="min-height:40px;gap:7px">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L20 8l-4-4L4 16v4z"></path></svg>{{ t.report.edit }}
+                </button>
+                <button type="button" onClick="{{ onDeleteReport }}" class="btn" style="min-height:40px;gap:7px;background:transparent;color:#dc2626;border:1px solid rgba(220,38,38,.32)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9.5 7V5.2a1.2 1.2 0 011.2-1.2h2.6a1.2 1.2 0 011.2 1.2V7M6.5 7l.9 12.1a1.2 1.2 0 001.2 1.1h6.8a1.2 1.2 0 001.2-1.1L17.5 7"></path></svg>{{ t.report.delete }}
+                </button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ zoneDialog }}">
+        <div style="position:absolute;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:18px">
+          <div onClick="{{ closeZoneDialog }}" role="presentation" style="position:absolute;inset:0;background:rgba(0,0,0,.5);animation:om-fade 180ms ease both"></div>
+          <div style="position:relative;width:100%;max-width:500px;max-height:100%;overflow-y:auto;background:#fff;border-radius:12px;box-shadow:0 20px 40px -12px rgba(0,0,0,.35);padding:24px;display:flex;flex-direction:column;gap:16px;animation:om-scale 200ms cubic-bezier(.4,0,.2,1) both">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <span style="flex:1;font:700 19px/25px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ t.admin.addZone }}</span>
+              <button type="button" onClick="{{ closeZoneDialog }}" aria-label="Close" class="btn btn-ghost btn-icon" style="flex:none;color:rgb(115,115,115)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+              </button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <label class="label" style="margin:0" for="z-name">{{ t.admin.zName }}</label>
+              <input id="z-name" class="input" placeholder="Magliman Day Care Center" style="min-height:44px;font-size:15px">
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <div style="flex:1;min-width:170px;display:flex;flex-direction:column;gap:7px;position:relative">
+                <label class="label" style="margin:0" for="z-type">{{ t.admin.zType }}</label>
+                <select id="z-type" class="input" style="min-height:44px;appearance:none;padding-right:32px;font-size:15px;cursor:pointer">
+                  <sc-for list="{{ zoneTypeOpts }}" as="o" hint-placeholder-count="3">
+                    <option value="{{ o.v }}">{{ o.label }}</option>
+                  </sc-for>
+                </select>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(115,115,115)" stroke-width="2" stroke-linecap="round" style="position:absolute;right:11px;bottom:14px;pointer-events:none"><path d="M6 9.5l6 6 6-6"></path></svg>
+              </div>
+              <div style="flex:1;min-width:120px;display:flex;flex-direction:column;gap:7px">
+                <label class="label" style="margin:0" for="z-cap">{{ t.admin.zCap }}</label>
+                <input id="z-cap" class="input" placeholder="150" style="min-height:44px;font-size:15px">
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <span class="label" style="margin:0">{{ t.submit.where }}</span>
+              <div style="height:190px;border-radius:10px;overflow:hidden;border:1px solid rgb(229,229,229);position:relative;z-index:0;isolation:isolate">
+                <x-import component-from-global-scope="barangay-map" from="./barangay-map.js" hint-size="100%,190px" style="position:absolute;inset:0" mode="picker" zones="{{ zonesJson }}" labels="0"></x-import>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <div style="flex:1;min-width:170px;display:flex;flex-direction:column;gap:7px">
+                <label class="label" style="margin:0" for="z-contact">{{ t.admin.zContact }}</label>
+                <input id="z-contact" class="input" placeholder="Kgd. Elmer Bengco" style="min-height:44px;font-size:15px">
+              </div>
+              <div style="flex:1;min-width:140px;display:flex;flex-direction:column;gap:7px">
+                <label class="label" style="margin:0" for="z-phone">{{ t.admin.zPhone }}</label>
+                <input id="z-phone" class="input" placeholder="0917 412 8830" style="min-height:44px;font-size:15px">
+              </div>
+            </div>
+            <div style="display:flex;gap:9px;justify-content:flex-end;padding-top:6px">
+              <button type="button" onClick="{{ closeZoneDialog }}" class="btn btn-outline btn-lg" style="min-height:44px">{{ t.report.cancel }}</button>
+              <button type="button" onClick="{{ onSaveZone }}" class="btn btn-lg" style="min-height:44px;background:var(--app-primary,#171717);color:#fafafa">{{ t.admin.save }}</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showCritical }}">
+        <div style="position:absolute;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(69,10,10,.72);animation:om-fade 200ms ease both">
+          <div style="width:100%;max-width:460px;background:#7f1d1d;border:1px solid #991b1b;border-radius:16px;padding:28px 24px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 50px -14px rgba(0,0,0,.6);animation:om-scale 240ms cubic-bezier(.4,0,.2,1) both">
+            <div style="display:flex;align-items:center;gap:11px">
+              <span style="width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#fff;animation:om-pulse 1.6s ease-in-out infinite">
+                <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.2 16.5H2.8L12 3.5z"></path><path d="M12 9.5v5M12 17.4h.01"></path></svg>
+              </span>
+              <span style="font:700 12px/16px 'Geist',system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#fecaca">{{ t.critical.kicker }}</span>
+            </div>
+            <span style="font:700 26px/32px 'Geist',system-ui,sans-serif;color:#fff;letter-spacing:-.01em;text-wrap:pretty">{{ critical.title }}</span>
+            <span style="font:400 15px/23px 'Geist',system-ui,sans-serif;color:#fee2e2;text-wrap:pretty">{{ critical.msg }}</span>
+            <span style="font:400 12px/16px 'Geist',system-ui,sans-serif;color:rgba(254,226,226,.72)">{{ critical.meta }}</span>
+            <div style="display:flex;flex-direction:column;gap:9px;padding-top:6px">
+              <button type="button" onClick="{{ onCriticalZones }}" class="btn btn-lg" style="width:100%;min-height:50px;font-size:15px;background:#fff;color:#7f1d1d;gap:8px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9v-6z"></path></svg>{{ t.critical.see }}
+              </button>
+              <button type="button" onClick="{{ closeCritical }}" class="btn btn-lg" style="width:100%;min-height:46px;font-size:15px;background:transparent;color:#fecaca;border:1px solid rgba(254,202,202,.4)">{{ t.critical.ack }}</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showToast }}">
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:80;display:flex;justify-content:{{ toastAlign }};padding:20px;pointer-events:none">
+          <div style="max-width:360px;background:#fff;border:1px solid {{ toast.bc }};border-left:4px solid {{ toast.color }};border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1);padding:14px 15px;display:flex;gap:11px;align-items:flex-start;animation:om-fade 220ms cubic-bezier(.4,0,.2,1) both;pointer-events:auto">
+            <sc-if value="{{ toast.isOk }}" hint-placeholder-val="{{ true }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ toast.color }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"></circle><path d="M8.2 12.4l2.8 2.8 4.8-5.8"></path></svg></sc-if><sc-if value="{{ toast.isWarn }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ toast.color }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.6v5.2M12 16.4h.01"></path></svg></sc-if><sc-if value="{{ toast.isInfo }}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="{{ toast.color }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.2M12 7.8h.01"></path></svg></sc-if>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+              <span style="font:600 14px/19px 'Geist',system-ui,sans-serif;color:rgb(10,10,10)">{{ toast.title }}</span>
+              <span style="font:400 13px/18px 'Geist',system-ui,sans-serif;color:rgb(115,115,115);text-wrap:pretty">{{ toast.sub }}</span>
+            </div>
+            <button type="button" onClick="{{ closeToast }}" aria-label="Close" class="btn btn-ghost btn-icon-sm" style="flex:none;color:rgb(140,140,140)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;primaryTone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;neutral&quot;,&quot;blue&quot;],&quot;default&quot;:&quot;neutral&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Brand&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dashboard&quot;,&quot;submit&quot;,&quot;alerts&quot;,&quot;admin&quot;,&quot;signin&quot;],&quot;default&quot;:&quot;dashboard&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;listDensity&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;pinLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Map&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      vp: 'mobile',
+      lang: 'en',
+      role: 'resident',
+      screen: props.startScreen || 'dashboard',
+      adminTab: 'broadcast',
+      scenario: 'live',
+      drawer: false,
+      detailId: null,
+      zoneDialog: false,
+      toast: null,
+      bannerDismissed: false,
+      criticalOpen: false,
+      dismissed: {},
+      votes: { r2: 'up' },
+      bump: {},
+      filterLevel: 'ALL',
+      filterRecency: '60',
+      sort: 'recent',
+      deletedZones: {},
+      deletedReports: {},
+      form: { name: '', desc: '', lat: '', lng: '', photo: false, sending: false, errs: {}, shakeAlt: false },
+      bcast: { title: '', msg: '', type: 'FLOOD_WARNING', prio: 'HIGH', sending: false, errs: {}, shakeAlt: false },
+      level: '',
+      queued: 0
+    };
+    this.LEVELS = [
+      { code: 'ANKLE', color: '#fbbf24', fg: '#422006', letter: 'A' },
+      { code: 'KNEE', color: '#f97316', fg: '#ffffff', letter: 'K' },
+      { code: 'CAR_DEEP', color: '#ef4444', fg: '#ffffff', letter: 'C' },
+      { code: 'IMPASSABLE', color: '#991b1b', fg: '#ffffff', letter: 'X' }
+    ];
+    this.PRIO = { LOW: '#6b7280', MEDIUM: '#2563eb', HIGH: '#ea580c', CRITICAL: '#dc2626' };
+    this.REPORTS = [
+      { id: 'r2', name: 'JASA \u2014 Magliman crossing', level: 'IMPASSABLE', lat: 15.0268, lng: 120.6702, mins: 4, up: 31, down: 2, isNew: true, verified: true, photo: true, owner: false,
+        by: 'Ben Lansang',
+        desc: { en: 'Chest-deep under the crossing and still rising. Trucks are turning back at the corner \u2014 do not attempt on a tricycle.', tl: 'Hanggang dibdib sa ilalim ng crossing at tumataas pa. Bumabalik na ang mga truck sa kanto \u2014 huwag subukan sa tricycle.' } },
+      { id: 'r1', name: 'Magliman Elementary School gate', level: 'KNEE', lat: 15.0301, lng: 120.6669, mins: 8, up: 14, down: 1, isNew: true, verified: false, photo: false, owner: true,
+        by: 'Rosa Dizon',
+        desc: { en: 'Water reached the school gate. Tricycles can still pass but slowly. Covered court inside is dry.', tl: 'Umabot sa gate ng eskwelahan ang tubig. Kaya pa ng tricycle pero mabagal. Tuyo pa ang covered court sa loob.' } },
+      { id: 'r4', name: 'Barangay road toward San Isidro', level: 'CAR_DEEP', lat: 15.0272, lng: 120.6651, mins: 15, up: 19, down: 3, isNew: false, verified: false, photo: true, owner: false,
+        by: 'Marites Sicat',
+        desc: { en: 'Sedans are stalling near the bend. Only high vehicles are getting through.', tl: 'Nag-i-stall ang mga sedan sa may liko. Tanging matataas na sasakyan ang nakakadaan.' } },
+      { id: 'r3', name: 'Purok 3 basketball court', level: 'ANKLE', lat: 15.0295, lng: 120.6698, mins: 22, up: 6, down: 0, isNew: false, verified: false, photo: false, owner: false,
+        by: null,
+        desc: { en: 'Shallow but spreading toward the houses on the low side.', tl: 'Mababaw pa pero kumakalat papunta sa mga bahay sa mababang bahagi.' } },
+      { id: 'r5', name: 'Sitio Magliman footbridge', level: 'KNEE', lat: 15.0311, lng: 120.6691, mins: 34, up: 11, down: 0, isNew: false, verified: true, photo: false, owner: false,
+        by: 'Brgy. Tanod Cuyugan',
+        desc: { en: 'Handrail is half submerged. Passable on foot with care, not for children.', tl: 'Kalahati na ang lubog ng handrail. Kayang lakarin nang maingat, hindi para sa mga bata.' } },
+      { id: 'r6', name: 'PASUDECO rail crossing', level: 'ANKLE', lat: 15.0258, lng: 120.6674, mins: 41, up: 4, down: 1, isNew: false, verified: false, photo: false, owner: false,
+        by: null,
+        desc: { en: 'Water pooling along the old rail line. Draining slowly.', tl: 'May tubig sa tabi ng lumang riles. Mabagal ang paglabas.' } }
+    ];
+    this.ALERTS = [
+      { id: 'a1', prio: 'CRITICAL', type: 'EVACUATION_ORDER', mins: 2, from: 'Kgd. E. Bengco',
+        title: { en: 'Evacuation ordered \u2014 Purok 3 and Purok 4', tl: 'Utos na lumikas \u2014 Purok 3 at Purok 4' },
+        msg: { en: 'Water at the Magliman crossing is impassable and still rising. Proceed to the Magliman Elementary School covered court. Rescue tricycles are staging at the barangay hall.', tl: 'Hindi na madaanan ang Magliman crossing at tumataas pa. Pumunta sa covered court ng Magliman Elementary School. Naka-istambay ang rescue tricycles sa barangay hall.' } },
+      { id: 'a2', prio: 'HIGH', type: 'FLOOD_WARNING', mins: 26, from: 'Brgy. Disaster Desk',
+        title: { en: 'Pampanga River at second alarm', tl: 'Pampanga River sa second alarm' },
+        msg: { en: 'PAGASA raised the second alarm at 3:40 PM. Households along the old rail line should move valuables to the second floor now.', tl: 'Itinaas ng PAGASA ang second alarm ganap na 3:40 PM. Ang mga bahay sa tabi ng lumang riles ay dapat nang iakyat ang gamit sa itaas.' } },
+      { id: 'a3', prio: 'MEDIUM', type: 'ROAD_CLOSURE', mins: 64, from: 'Brgy. Disaster Desk',
+        title: { en: 'Barangay road to San Isidro closed to light vehicles', tl: 'Sarado sa magagaang sasakyan ang barangay road papuntang San Isidro' },
+        msg: { en: 'Use the JASA service road instead. Tanods are posted at both ends of the closure.', tl: 'Gamitin muna ang JASA service road. May tanod sa dalawang dulo ng saradong bahagi.' } },
+      { id: 'a4', prio: 'LOW', type: 'GENERAL', mins: 184, from: 'Brgy. Secretary',
+        title: { en: 'Relief goods distribution at 7:00 AM tomorrow', tl: 'Pamamahagi ng relief goods bukas 7:00 AM' },
+        msg: { en: 'One claim per household at the barangay hall. Bring any valid ID.', tl: 'Isang claim kada sambahayan sa barangay hall. Magdala ng kahit anong valid ID.' } }
+    ];
+    this.ZONES = [
+      { id: 'z1', name: 'Magliman Elementary School Covered Court', type: 'SHELTER', lat: 15.0303, lng: 120.6664, cap: 320, contact: 'Kgd. Elmer Bengco \u00b7 0917 412 8830' },
+      { id: 'z2', name: 'Magliman Barangay Hall', type: 'EVACUATION_POINT', lat: 15.0282, lng: 120.6685, cap: 90, contact: 'Brgy. Desk \u00b7 0995 220 1174' },
+      { id: 'z3', name: 'PASUDECO embankment, Purok 5', type: 'HIGH_GROUND', lat: 15.025, lng: 120.666, cap: null, contact: '' }
+    ];
+    this.ZONE_COLOR = { SHELTER: '#16a34a', EVACUATION_POINT: '#0d9488', HIGH_GROUND: '#0284c7' };
+    this.T = {
+      en: {
+        brand: 'Magliman Flood Watch',
+        place: 'Barangay Magliman \u00b7 San Fernando, Pampanga',
+        nav: { map: 'Map', submit: 'Submit report', alerts: 'Alerts', panel: 'Barangay panel', signout: 'Sign out' },
+        levels: { ANKLE: 'Ankle-deep', KNEE: 'Knee-deep', CAR_DEEP: 'Car-deep', IMPASSABLE: 'Impassable' },
+        levelHints: { ANKLE: 'Passable on foot', KNEE: 'Slow for tricycles', CAR_DEEP: 'Cars will stall', IMPASSABLE: 'Do not attempt' },
+        dash: { live: 'Live reports', updated: 'Updated just now', all: 'All levels', legend: 'Water level', safeZones: 'Safe zones', details: 'Details',
+          empty: 'No reports in the last hour', emptySub: 'Nothing has been reported in Magliman yet. If you see flooding on your street, be the first.', beFirst: 'Be the first to report' },
+        recency: { '30': 'Last 30 minutes', '60': 'Last hour', all: 'Anytime' },
+        sortOpts: { recent: 'Most recent', voted: 'Most voted' },
+        report: { new: 'New', verified: 'Verified', photo: 'Photo from the reporter', delete: 'Delete', edit: 'Edit', cancel: 'Cancel', anon: 'Anonymous', voted: 'You voted', reportedBy: 'Reported by' },
+        submit: { title: 'Submit report', sub: 'About 20 seconds. Officials see it immediately.', where: 'Where is the flooding?', mapHint: 'Tap the map to drop a pin, or type coordinates.', lat: 'Latitude', lng: 'Longitude',
+          name: 'Location name', namePh: 'e.g. Market area, JASA crossing', level: 'How deep is the water?', desc: 'Description', descPh: 'Any additional details? (optional)',
+          photo: 'Photo', photoBtn: 'Upload photo', photoHint: 'JPG or PNG, up to 5MB', photoDone: 'flood-magliman.jpg \u00b7 2.1MB', photoDoneHint: 'Tap to replace',
+          send: 'Submit report', sending: 'Sending\u2026', queue: 'You are offline \u2014 this will send by itself once you have signal.' },
+        err: { name: 'Enter a location name so neighbours can find it.', level: 'Choose a water level.', pin: 'Drop a pin on the map or enter coordinates.' },
+        alerts: { title: 'Alerts', sub: 'From your barangay officials', empty: 'No active alerts', from: 'Sent by' },
+        prio: { LOW: 'Low', MEDIUM: 'Medium', HIGH: 'High', CRITICAL: 'Critical' },
+        type: { FLOOD_WARNING: 'Flood warning', EVACUATION_ORDER: 'Evacuation order', ROAD_CLOSURE: 'Road closure', GENERAL: 'General' },
+        zone: { SHELTER: 'Shelter', HIGH_GROUND: 'High ground', EVACUATION_POINT: 'Evacuation point', cap: 'Capacity' },
+        admin: { title: 'Barangay panel', sub: 'Barangay Magliman \u00b7 Disaster desk', tabB: 'Broadcast alert', tabZ: 'Safe zones', tabR: 'Evacuation routes',
+          bTitle: 'Alert title', bTitlePh: 'e.g. Evacuation ordered for Purok 3', bMsg: 'Message', bMsgPh: 'Alert details for residents', bType: 'Alert type', bPrio: 'Priority',
+          send: 'Broadcast alert', sending: 'Broadcasting\u2026', reach: 'Goes to 1,412 registered residents of Magliman', errTitle: 'An alert needs a title residents can scan in one second.',
+          addZone: 'Add safe zone', zName: 'Name', zType: 'Type', zCap: 'Capacity', zContact: 'Contact person', zPhone: 'Phone', save: 'Save zone',
+          routesEmpty: 'No evacuation routes drawn yet', routesSub: 'Route drawing arrives in phase 2. Until then the safe zones carry the wayfinding.', draw: 'Draw a route' },
+        auth: { inTitle: 'Sign in', inSub: 'Enter your email to see flooding in your barangay.', email: 'Email', pass: 'Password', forgot: 'Forgot password?', signin: 'Sign in',
+          noAcct: "Don't have an account?", signup: 'Sign up', upTitle: 'Create account', upSub: 'Join your barangay and start reporting.', name: 'Full name',
+          confirm: 'Confirm password', brgy: 'Barangay', create: 'Create account', hasAcct: 'Already have an account?' },
+        offline: { chip: 'Offline', banner: 'You are offline. Reports saved on this phone are still readable.', queued: 'report waiting to send', queuedPl: 'reports waiting to send' },
+        toast: { sent: 'Report submitted', sentSub: 'Neighbours in Magliman can see it now.', queued: 'Report saved on this phone', queuedSub: 'It will send by itself once you have signal.',
+          bcast: 'Alert broadcast', bcastSub: 'Sent to 1,412 residents of Magliman.', voted: 'Vote counted', votedSub: 'Thanks \u2014 this helps neighbours judge the report.',
+          zone: 'Safe zone saved', zoneSub: 'Residents will see it on the map right away.', deleted: 'Report deleted', deletedSub: 'It is gone from the map.',
+          zoneDel: 'Safe zone removed', zoneDelSub: 'It no longer appears on the resident map.' },
+        critical: { kicker: 'Evacuation order', ack: 'I understand', see: 'Show safe zones' },
+        roles: { resident: 'Resident', official: 'Barangay official' }
+      },
+      tl: {
+        brand: 'Magliman Flood Watch',
+        place: 'Barangay Magliman \u00b7 San Fernando, Pampanga',
+        nav: { map: 'Mapa', submit: 'Mag-report', alerts: 'Mga abiso', panel: 'Panel ng barangay', signout: 'Mag-sign out' },
+        levels: { ANKLE: 'Hanggang bukung-bukong', KNEE: 'Hanggang tuhod', CAR_DEEP: 'Lubog ang sasakyan', IMPASSABLE: 'Hindi madaanan' },
+        levelHints: { ANKLE: 'Kayang lakarin', KNEE: 'Mabagal ang tricycle', CAR_DEEP: 'Mag-i-stall ang kotse', IMPASSABLE: 'Huwag subukan' },
+        dash: { live: 'Mga report ngayon', updated: 'Bago lang na-update', all: 'Lahat', legend: 'Lalim ng tubig', safeZones: 'Mga safe zone', details: 'Detalye',
+          empty: 'Walang report sa huling oras', emptySub: 'Wala pang naka-report sa Magliman. Kung may baha sa kalye niyo, ikaw ang mauna.', beFirst: 'Mauna sa pag-report' },
+        recency: { '30': 'Huling 30 minuto', '60': 'Huling isang oras', all: 'Kahit kailan' },
+        sortOpts: { recent: 'Pinakabago', voted: 'Pinakamaraming boto' },
+        report: { new: 'Bago', verified: 'Beripikado', photo: 'Litrato mula sa nag-report', delete: 'Alisin', edit: 'Baguhin', cancel: 'Huwag na', anon: 'Walang pangalan', voted: 'Bumoto ka', reportedBy: 'Nag-report' },
+        submit: { title: 'Mag-report', sub: 'Mga 20 segundo lang. Agad itong nakikita ng barangay.', where: 'Saan may baha?', mapHint: 'I-tap ang mapa para maglagay ng pin, o i-type ang coordinates.', lat: 'Latitude', lng: 'Longitude',
+          name: 'Pangalan ng lugar', namePh: 'hal. Palengke, JASA crossing', level: 'Gaano kalalim ang tubig?', desc: 'Dagdag na detalye', descPh: 'May idadagdag pa? (opsyonal)',
+          photo: 'Litrato', photoBtn: 'Mag-upload ng litrato', photoHint: 'JPG o PNG, hanggang 5MB', photoDone: 'flood-magliman.jpg \u00b7 2.1MB', photoDoneHint: 'I-tap para palitan',
+          send: 'Ipadala ang report', sending: 'Ipinapadala\u2026', queue: 'Offline ka \u2014 kusa itong ipapadala kapag may signal.' },
+        err: { name: 'Ilagay ang pangalan ng lugar para makita ito ng kapitbahay.', level: 'Pumili ng lalim ng tubig.', pin: 'Maglagay ng pin sa mapa o ilagay ang coordinates.' },
+        alerts: { title: 'Mga abiso', sub: 'Mula sa mga opisyal ng barangay', empty: 'Walang aktibong abiso', from: 'Galing kay' },
+        prio: { LOW: 'Mababa', MEDIUM: 'Katamtaman', HIGH: 'Mataas', CRITICAL: 'Kritikal' },
+        type: { FLOOD_WARNING: 'Babala sa baha', EVACUATION_ORDER: 'Utos na lumikas', ROAD_CLOSURE: 'Sarado ang daan', GENERAL: 'Pangkalahatan' },
+        zone: { SHELTER: 'Silungan', HIGH_GROUND: 'Mataas na lugar', EVACUATION_POINT: 'Lugar ng paglikas', cap: 'Kapasidad' },
+        admin: { title: 'Panel ng barangay', sub: 'Barangay Magliman \u00b7 Disaster desk', tabB: 'Magpadala ng abiso', tabZ: 'Mga safe zone', tabR: 'Ruta ng paglikas',
+          bTitle: 'Pamagat ng abiso', bTitlePh: 'hal. Utos na lumikas sa Purok 3', bMsg: 'Mensahe', bMsgPh: 'Detalye ng abiso para sa mga residente', bType: 'Uri ng abiso', bPrio: 'Antas',
+          send: 'Ipadala ang abiso', sending: 'Ipinapadala\u2026', reach: 'Mapupunta sa 1,412 nakarehistrong residente ng Magliman', errTitle: 'Kailangan ng pamagat na mabilis mabasa ng residente.',
+          addZone: 'Magdagdag ng safe zone', zName: 'Pangalan', zType: 'Uri', zCap: 'Kapasidad', zContact: 'Contact person', zPhone: 'Telepono', save: 'I-save',
+          routesEmpty: 'Wala pang naka-drawing na ruta', routesSub: 'Sa phase 2 na ang pag-drawing ng ruta. Sa ngayon, ang mga safe zone ang gabay.', draw: 'Mag-drawing ng ruta' },
+        auth: { inTitle: 'Mag-sign in', inSub: 'Ilagay ang email para makita ang baha sa barangay niyo.', email: 'Email', pass: 'Password', forgot: 'Nakalimutan ang password?', signin: 'Mag-sign in',
+          noAcct: 'Wala pang account?', signup: 'Gumawa ng account', upTitle: 'Gumawa ng account', upSub: 'Sumali sa barangay niyo at magsimulang mag-report.', name: 'Buong pangalan',
+          confirm: 'Ulitin ang password', brgy: 'Barangay', create: 'Gumawa ng account', hasAcct: 'May account na?' },
+        offline: { chip: 'Offline', banner: 'Offline ka. Mababasa pa ang mga report na naka-save sa telepono.', queued: 'report na hindi pa naipadala', queuedPl: 'report na hindi pa naipadala' },
+        toast: { sent: 'Naipadala ang report', sentSub: 'Nakikita na ito ng mga kapitbahay sa Magliman.', queued: 'Naka-save sa telepono', queuedSub: 'Kusa itong ipapadala kapag may signal.',
+          bcast: 'Naipadala ang abiso', bcastSub: 'Naipadala sa 1,412 residente ng Magliman.', voted: 'Nabilang ang boto', votedSub: 'Salamat \u2014 nakakatulong ito sa mga kapitbahay.',
+          zone: 'Naka-save ang safe zone', zoneSub: 'Agad itong makikita ng mga residente sa mapa.', deleted: 'Naalis ang report', deletedSub: 'Wala na ito sa mapa.',
+          zoneDel: 'Naalis ang safe zone', zoneDelSub: 'Hindi na ito lumalabas sa mapa ng residente.' },
+        critical: { kicker: 'Utos na lumikas', ack: 'Naiintindihan ko', see: 'Ipakita ang safe zones' },
+        roles: { resident: 'Residente', official: 'Opisyal ng barangay' }
+      }
+    };
+  }
+
+  componentDidMount() {
+    this._onPin = (e) => {
+      const id = e.detail && e.detail.id;
+      if (id) this.setState({ detailId: id });
+    };
+    this._onPick = (e) => {
+      const d = e.detail || {};
+      this.setState((s) => ({ form: Object.assign({}, s.form, { lat: d.lat.toFixed(5), lng: d.lng.toFixed(5), errs: Object.assign({}, s.form.errs, { pin: false }) }) }));
+    };
+    document.addEventListener('barangay-pin', this._onPin);
+    document.addEventListener('barangay-pick', this._onPick);
+  }
+  componentWillUnmount() {
+    document.removeEventListener('barangay-pin', this._onPin);
+    document.removeEventListener('barangay-pick', this._onPick);
+    clearTimeout(this._toastT);
+    clearTimeout(this._sendT);
+  }
+
+  t() { return this.T[this.state.lang]; }
+
+  toast(key, kind) {
+    const t = this.t().toast;
+    const map = {
+      sent: { title: t.sent, sub: t.sentSub, kind: 'ok' },
+      queued: { title: t.queued, sub: t.queuedSub, kind: 'warn' },
+      bcast: { title: t.bcast, sub: t.bcastSub, kind: 'ok' },
+      voted: { title: t.voted, sub: t.votedSub, kind: 'info' },
+      zone: { title: t.zone, sub: t.zoneSub, kind: 'ok' },
+      deleted: { title: t.deleted, sub: t.deletedSub, kind: 'info' },
+      zoneDel: { title: t.zoneDel, sub: t.zoneDelSub, kind: 'info' }
+    };
+    const m = map[key];
+    if (!m) return;
+    clearTimeout(this._toastT);
+    this.setState({ toast: { title: m.title, sub: m.sub, kind: kind || m.kind } });
+    this._toastT = setTimeout(() => this.setState({ toast: null }), 3600);
+  }
+
+  setScenario = (s) => {
+    const next = {
+      scenario: s,
+      offline: false,
+      criticalOpen: false,
+      bannerDismissed: false,
+      toast: null,
+      drawer: false,
+      detailId: null
+    };
+    if (s === 'critical') { next.criticalOpen = true; next.screen = 'dashboard'; }
+    if (s === 'offline') { next.queued = 1; next.screen = 'dashboard'; }
+    if (s === 'live' || s === 'loading' || s === 'empty') next.queued = 0;
+    if (s !== 'critical' && s !== 'offline') next.screen = 'dashboard';
+    this.setState(next);
+  };
+
+  go = (screen) => () => this.setState({ screen: screen, drawer: false, detailId: null });
+
+  vote = (id, dir) => () => {
+    this.setState((s) => {
+      const cur = s.votes[id];
+      const votes = Object.assign({}, s.votes);
+      if (cur === dir) delete votes[id]; else votes[id] = dir;
+      const bump = Object.assign({}, s.bump);
+      bump[id + dir] = (bump[id + dir] || 0) + 1;
+      return { votes: votes, bump: bump };
+    });
+    this.toast('voted');
+  };
+
+  submitReport = () => {
+    const f = this.state.form;
+    const errs = {
+      name: !f.name.trim(),
+      level: !this.state.level,
+      pin: !(f.lat && f.lng)
+    };
+    if (errs.name || errs.level || errs.pin) {
+      this.setState({ form: Object.assign({}, f, { errs: errs, shakeAlt: !f.shakeAlt }) });
+      return;
+    }
+    this.setState({ form: Object.assign({}, f, { errs: {}, sending: true }) });
+    clearTimeout(this._sendT);
+    this._sendT = setTimeout(() => {
+      const off = this.state.scenario === 'offline';
+      this.setState((s) => ({
+        form: { name: '', desc: '', lat: '', lng: '', photo: false, sending: false, errs: {}, shakeAlt: false },
+        level: '',
+        screen: 'dashboard',
+        queued: off ? s.queued + 1 : s.queued
+      }));
+      this.toast(off ? 'queued' : 'sent');
+    }, 900);
+  };
+
+  broadcast = () => {
+    const b = this.state.bcast;
+    if (!b.title.trim()) {
+      this.setState({ bcast: Object.assign({}, b, { errs: { title: true }, shakeAlt: !b.shakeAlt }) });
+      return;
+    }
+    this.setState({ bcast: Object.assign({}, b, { errs: {}, sending: true }) });
+    clearTimeout(this._sendT);
+    this._sendT = setTimeout(() => {
+      this.setState({ bcast: { title: '', msg: '', type: b.type, prio: b.prio, sending: false, errs: {}, shakeAlt: false } });
+      this.toast('bcast');
+    }, 900);
+  };
+
+  seg(items, current, set) {
+    return items.map((i) => {
+      const on = i.v === current;
+      return {
+        label: i.label, v: i.v,
+        bg: on ? '#ffffff' : 'transparent',
+        fg: on ? 'rgb(10,10,10)' : 'rgb(115,115,115)',
+        sh: on ? '0 1px 2px rgba(0,0,0,.1)' : 'none',
+        onClick: () => set(i.v)
+      };
+    });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const t = this.t();
+    const isMobile = s.vp === 'mobile';
+    const isDesktop = !isMobile;
+    const isLoading = s.scenario === 'loading';
+    const isEmptyScenario = s.scenario === 'empty';
+    const offline = s.scenario === 'offline';
+    const dense = (this.props.listDensity || 'comfortable') === 'compact';
+    const primaryVar = (this.props.primaryTone || 'neutral') === 'blue' ? '#2563eb' : '#171717';
+
+    const activeAlerts = this.ALERTS.filter((a) => !s.dismissed[a.id]);
+    const unread = activeAlerts.length;
+    const banner0 = activeAlerts[0];
+
+    let list = this.REPORTS.filter((r) => !s.deletedReports[r.id]);
+    if (isEmptyScenario) list = [];
+    if (s.filterLevel !== 'ALL') list = list.filter((r) => r.level === s.filterLevel);
+    if (s.filterRecency !== 'all') list = list.filter((r) => r.mins <= Number(s.filterRecency));
+    const counted = list.map((r) => {
+      const v = s.votes[r.id];
+      return Object.assign({}, r, { upN: r.up + (v === 'up' ? 1 : 0), downN: r.down + (v === 'down' ? 1 : 0), myVote: v });
+    });
+    if (s.sort === 'voted') counted.sort((a, b) => (b.upN - b.downN) - (a.upN - a.downN));
+    else counted.sort((a, b) => a.mins - b.mins);
+
+    const ago = (m) => s.lang === 'en'
+      ? (m < 60 ? m + ' min ago' : Math.round(m / 60) + ' hr ago')
+      : (m < 60 ? m + ' min ang nakalipas' : Math.round(m / 60) + ' oras ang nakalipas');
+
+    const lvl = (code) => this.LEVELS.filter((l) => l.code === code)[0] || this.LEVELS[0];
+
+    const voteStyle = (on, tone) => on
+      ? { bg: tone === 'up' ? '#dcfce7' : '#fee2e2', fg: tone === 'up' ? '#15803d' : '#b91c1c', bc: tone === 'up' ? '#86efac' : '#fecaca', fill: 'currentColor' }
+      : { bg: '#ffffff', fg: 'rgb(64,64,64)', bc: 'rgb(229,229,229)', fill: 'none' };
+
+    const decorate = (r) => {
+      const L = lvl(r.level);
+      const u = voteStyle(r.myVote === 'up', 'up');
+      const d = voteStyle(r.myVote === 'down', 'down');
+      const bu = s.bump[r.id + 'up'] || 0;
+      const bd = s.bump[r.id + 'down'] || 0;
+      return {
+        id: r.id, name: r.name, isNew: r.isNew, verified: r.verified, hasPhoto: r.photo, isOwner: r.owner,
+        color: L.color, fg: L.fg, levelLabel: t.levels[r.level],
+        ago: ago(r.mins), agoLine: ago(r.mins), coords: r.lat.toFixed(5) + ', ' + r.lng.toFixed(5),
+        byLine: t.report.reportedBy + ' \u00b7 ' + (r.by || t.report.anon),
+        desc: r.desc[s.lang],
+        up: r.upN, down: r.downN,
+        upBg: u.bg, upFg: u.fg, upBc: u.bc, upFill: u.fill,
+        downBg: d.bg, downFg: d.fg, downBc: d.bc, downFill: d.fill,
+        upAnim: bu % 2 === 1 ? 'om-count 320ms ease' : 'none',
+        downAnim: bd % 2 === 1 ? 'om-count 320ms ease' : 'none',
+        didVote: !!r.myVote,
+        votedLabel: t.report.voted,
+        cardBorder: r.isNew ? '#bfdbfe' : 'rgb(233,233,233)',
+        cardShadow: r.isNew ? '0 1px 2px rgba(37,99,235,.12)' : '0 1px 2px rgba(0,0,0,.04)',
+        onOpen: () => this.setState({ detailId: r.id }),
+        onUp: this.vote(r.id, 'up'),
+        onDown: this.vote(r.id, 'down')
+      };
+    };
+
+    const reports = isLoading ? [] : counted.map(decorate);
+    const detailRaw = counted.filter((r) => r.id === s.detailId)[0];
+    const detail = detailRaw ? decorate(detailRaw) : {};
+
+    const pins = counted.map((r) => ({ id: r.id, level: r.level, lat: r.lat, lng: r.lng, name: r.name, isNew: r.isNew }));
+    const zones = this.ZONES.filter((z) => !s.deletedZones[z.id]);
+
+    const levelChips = [{ code: 'ALL', label: t.dash.all, color: null }].concat(
+      this.LEVELS.map((l) => ({ code: l.code, label: t.levels[l.code], color: l.color }))
+    ).map((c) => {
+      const on = s.filterLevel === c.code;
+      return {
+        label: c.label, hasDot: !!c.color, dot: c.color || '#000',
+        bg: on ? 'rgb(23,23,23)' : '#ffffff',
+        fg: on ? '#fafafa' : 'rgb(64,64,64)',
+        bc: on ? 'rgb(23,23,23)' : 'rgb(229,229,229)',
+        onClick: () => this.setState({ filterLevel: c.code })
+      };
+    });
+
+    const levelOpts = this.LEVELS.map((l) => {
+      const on = s.level === l.code;
+      return {
+        code: l.code, label: t.levels[l.code], hint: t.levelHints[l.code], color: l.color, fg: l.fg, letter: l.letter,
+        bg: on ? '#ffffff' : 'rgb(250,250,250)',
+        border: on ? '2px solid ' + l.color : '1px solid rgb(229,229,229)',
+        shadow: on ? '0 1px 2px rgba(0,0,0,.08)' : 'none',
+        pressed: on ? 'true' : 'false',
+        onClick: () => this.setState((st) => ({ level: l.code, form: Object.assign({}, st.form, { errs: Object.assign({}, st.form.errs, { level: false }) }) }))
+      };
+    });
+
+    const f = s.form;
+    const shakeName = f.shakeAlt ? 'om-shakeB 320ms ease' : 'om-shakeA 320ms ease';
+    const canSend = !!(f.name.trim() && s.level && f.lat && f.lng);
+    const form = {
+      name: f.name, desc: f.desc, lat: f.lat, lng: f.lng, sending: f.sending,
+      count: f.desc.length + ' / 500',
+      errName: !!f.errs.name, errLevel: !!f.errs.level, errPin: !!f.errs.pin,
+      nameBorder: f.errs.name ? '#dc2626' : 'rgb(229,229,229)',
+      pinBorder: f.errs.pin ? '#dc2626' : 'rgb(229,229,229)',
+      photoBorder: f.photo ? '#16a34a' : 'rgb(214,214,214)',
+      photoBg: f.photo ? '#f0fdf4' : 'rgb(250,250,250)',
+      photoDone: !!f.photo,
+      photoPending: !f.photo,
+      photoLabel: f.photo ? t.submit.photoDone : t.submit.photoBtn,
+      photoHint: f.photo ? t.submit.photoDoneHint : t.submit.photoHint,
+      shake: shakeName,
+      sendLabel: f.sending ? t.submit.sending : t.submit.send,
+      sendBg: canSend ? 'var(--app-primary,#171717)' : 'rgb(228,228,228)',
+      sendFg: canSend ? '#fafafa' : 'rgb(150,150,150)',
+      sendCursor: 'pointer'
+    };
+
+    const b = s.bcast;
+    const bcast = {
+      title: b.title, msg: b.msg, type: b.type, prio: b.prio, sending: b.sending,
+      count: b.msg.length + ' / 500',
+      errTitle: !!b.errs.title,
+      titleBorder: b.errs.title ? '#dc2626' : 'rgb(229,229,229)',
+      msgBorder: 'rgb(229,229,229)',
+      shake: b.shakeAlt ? 'om-shakeB 320ms ease' : 'om-shakeA 320ms ease',
+      prioColor: this.PRIO[b.prio],
+      previewBg: b.prio === 'CRITICAL' ? '#fef2f2' : 'rgb(250,250,250)',
+      previewBc: b.prio === 'CRITICAL' ? '#fecaca' : 'rgb(240,240,240)',
+      previewLine: t.prio[b.prio] + ' \u00b7 ' + t.type[b.type],
+      sendLabel: b.sending ? t.admin.sending : t.admin.send,
+      sendBg: b.prio === 'CRITICAL' ? '#dc2626' : 'var(--app-primary,#171717)'
+    };
+
+    const alerts = activeAlerts.map((a) => ({
+      title: a.title[s.lang], msg: a.msg[s.lang], ago: ago(a.mins),
+      color: this.PRIO[a.prio], prioLabel: t.prio[a.prio], typeLabel: t.type[a.type],
+      fromLine: t.alerts.from + ' \u00b7 ' + a.from,
+      onDismiss: () => this.setState((st) => ({ dismissed: Object.assign({}, st.dismissed, { [a.id]: true }) }))
+    }));
+
+    const zoneCards = zones.map((z) => ({
+      name: z.name, typeLabel: t.zone[z.type], color: this.ZONE_COLOR[z.type],
+      coords: z.lat.toFixed(4) + ', ' + z.lng.toFixed(4),
+      meta: (z.cap ? t.zone.cap + ' ' + z.cap : '\u2014') + (z.contact ? '  \u00b7  ' + z.contact : ''),
+      onDelete: () => { this.setState((st) => ({ deletedZones: Object.assign({}, st.deletedZones, { [z.id]: true }) })); this.toast('zoneDel'); }
+    }));
+
+    const isOfficial = s.role === 'official';
+    const drawerItems = [
+      { key: 'dashboard', label: t.nav.map, icon: '#i-map' },
+      { key: 'submit', label: t.nav.submit, icon: '#i-plus' },
+      { key: 'alerts', label: t.nav.alerts, icon: '#i-bell', badge: unread > 0, badgeText: String(unread) }
+    ].concat(isOfficial ? [{ key: 'admin', label: t.nav.panel, icon: '#i-gear' }] : []).map((d) => {
+      const on = s.screen === d.key;
+      return Object.assign({}, d, {
+        isMap: d.key === 'dashboard', isSubmit: d.key === 'submit',
+        isAlerts: d.key === 'alerts', isAdmin: d.key === 'admin',
+        bg: on ? 'rgb(245,245,245)' : 'transparent',
+        fg: on ? 'rgb(10,10,10)' : 'rgb(64,64,64)',
+        onClick: this.go(d.key)
+      });
+    });
+
+    const deskNav = [
+      { key: 'dashboard', label: t.nav.map },
+      { key: 'alerts', label: t.nav.alerts, badge: unread > 0, badgeText: String(unread) }
+    ].concat(isOfficial ? [{ key: 'admin', label: t.nav.panel }] : []).map((d) => {
+      const on = s.screen === d.key;
+      return Object.assign({}, d, {
+        bg: on ? 'rgb(245,245,245)' : 'transparent',
+        fg: on ? 'rgb(10,10,10)' : 'rgb(82,82,82)',
+        onClick: this.go(d.key)
+      });
+    });
+
+    const adminTabs = [
+      { v: 'broadcast', label: t.admin.tabB, icon: '#i-mega' },
+      { v: 'zones', label: t.admin.tabZ, icon: '#i-shield' },
+      { v: 'routes', label: t.admin.tabR, icon: '#i-route' }
+    ].map((x) => {
+      const on = s.adminTab === x.v;
+      return {
+        label: x.label,
+        isB: x.v === 'broadcast', isZ: x.v === 'zones', isR: x.v === 'routes',
+        bg: on ? '#ffffff' : 'transparent',
+        fg: on ? 'rgb(10,10,10)' : 'rgb(115,115,115)',
+        sh: on ? '0 1px 2px rgba(0,0,0,.1)' : 'none',
+        onClick: () => this.setState({ adminTab: x.v })
+      };
+    });
+
+    const toastMeta = {
+      ok: { color: '#16a34a', bc: 'rgb(229,229,229)', icon: '#i-check' },
+      warn: { color: '#ea580c', bc: '#fed7aa', icon: '#i-warncircle' },
+      info: { color: '#2563eb', bc: 'rgb(229,229,229)', icon: '#i-info' }
+    };
+    const tm = s.toast ? toastMeta[s.toast.kind] || toastMeta.info : toastMeta.info;
+
+    const sSignin = s.screen === 'signin';
+    const sSignup = s.screen === 'signup';
+
+    return {
+      t: t,
+      primaryVar: primaryVar,
+      isMobile: isMobile, isDesktop: isDesktop,
+      frameW: isMobile ? '390px' : '1280px',
+      frameH: isMobile ? '830px' : '812px',
+      frameRadius: isMobile ? '42px' : '12px',
+      frameBorder: isMobile ? '11px solid #111827' : '1px solid rgb(214,214,214)',
+      screen: s.screen,
+      sDash: s.screen === 'dashboard',
+      sSubmit: s.screen === 'submit',
+      sAlerts: s.screen === 'alerts',
+      sAdmin: s.screen === 'admin',
+      sAuth: sSignin || sSignup,
+      sSignin: sSignin, sSignup: sSignup,
+      tabBroadcast: s.adminTab === 'broadcast',
+      tabZones: s.adminTab === 'zones',
+      tabRoutes: s.adminTab === 'routes',
+      dashDir: isMobile ? 'column' : 'row',
+      mapFlex: isMobile ? '0 0 262px' : '1 1 auto',
+      mapMinH: isMobile ? '262px' : '0',
+      mapBorder: isMobile ? '0' : '1px solid rgb(229,229,229)',
+      listFlex: isMobile ? '1 1 auto' : '0 0 496px',
+      listW: isMobile ? 'auto' : '496px',
+      formMax: isMobile ? '100%' : '680px',
+      adminMax: isMobile ? '100%' : '820px',
+      pagePad: isMobile ? '16px 14px 40px' : '28px 24px 56px',
+      cardPad: dense ? '11px 12px' : '14px',
+      toastAlign: isMobile ? 'center' : 'flex-end',
+
+      offline: offline,
+      hasQueue: s.queued > 0,
+      queueLine: s.queued + ' ' + (s.queued === 1 ? t.offline.queued : t.offline.queuedPl),
+      unread: String(unread),
+      hasUnread: unread > 0,
+      initials: s.role === 'official' ? 'EB' : 'RD',
+      userName: s.role === 'official' ? 'Kgd. Elmer Bengco' : 'Rosa Dizon',
+      userRole: t.roles[s.role],
+
+      showBanner: !!banner0 && !s.bannerDismissed && !isLoading,
+      banner: banner0 ? {
+        title: banner0.title[s.lang], msg: banner0.msg[s.lang],
+        color: this.PRIO[banner0.prio], prioLabel: t.prio[banner0.prio],
+        bg: banner0.prio === 'CRITICAL' ? '#fef2f2' : '#ffffff',
+        border: banner0.prio === 'CRITICAL' ? '#fecaca' : 'rgb(229,229,229)'
+      } : {},
+
+      pinsJson: JSON.stringify(pins),
+      zonesJson: JSON.stringify(zones),
+      selectedId: s.detailId || '',
+      labelsAttr: (this.props.pinLabels === false) ? '0' : '1',
+      mapLoading: isLoading ? '1' : '0',
+
+      isLoading: isLoading,
+      isEmpty: !isLoading && reports.length === 0,
+      skeletons: [1, 2, 3, 4],
+      reports: reports,
+      countLine: isLoading ? '\u2014' : (reports.length + ' ' + (s.lang === 'en' ? 'reports' : 'report')),
+      legend: this.LEVELS.map((l) => ({ color: l.color, label: t.levels[l.code] })),
+      levelChips: levelChips,
+      recencyOpts: [{ v: '30', label: t.recency['30'] }, { v: '60', label: t.recency['60'] }, { v: 'all', label: t.recency.all }],
+      sortOpts: [{ v: 'recent', label: t.sortOpts.recent }, { v: 'voted', label: t.sortOpts.voted }],
+      filterRecency: s.filterRecency,
+      sort: s.sort,
+      onRecency: (e) => this.setState({ filterRecency: e.target.value }),
+      onSort: (e) => this.setState({ sort: e.target.value }),
+
+      levelOpts: levelOpts,
+      form: form,
+      onName: (e) => this.setState((st) => ({ form: Object.assign({}, st.form, { name: e.target.value, errs: Object.assign({}, st.form.errs, { name: false }) }) })),
+      onDesc: (e) => { const v = e.target.value.slice(0, 500); this.setState((st) => ({ form: Object.assign({}, st.form, { desc: v }) })); },
+      onLat: (e) => this.setState((st) => ({ form: Object.assign({}, st.form, { lat: e.target.value, errs: Object.assign({}, st.form.errs, { pin: false }) }) })),
+      onLng: (e) => this.setState((st) => ({ form: Object.assign({}, st.form, { lng: e.target.value, errs: Object.assign({}, st.form.errs, { pin: false }) }) })),
+      onPhoto: () => this.setState((st) => ({ form: Object.assign({}, st.form, { photo: !st.form.photo }) })),
+      onSubmitReport: this.submitReport,
+
+      bcast: bcast,
+      onBTitle: (e) => this.setState((st) => ({ bcast: Object.assign({}, st.bcast, { title: e.target.value, errs: {} }) })),
+      onBMsg: (e) => { const v = e.target.value.slice(0, 500); this.setState((st) => ({ bcast: Object.assign({}, st.bcast, { msg: v }) })); },
+      onBType: (e) => this.setState((st) => ({ bcast: Object.assign({}, st.bcast, { type: e.target.value }) })),
+      onBPrio: (e) => this.setState((st) => ({ bcast: Object.assign({}, st.bcast, { prio: e.target.value }) })),
+      onBroadcast: this.broadcast,
+      typeOpts: ['FLOOD_WARNING', 'EVACUATION_ORDER', 'ROAD_CLOSURE', 'GENERAL'].map((v) => ({ v: v, label: t.type[v] })),
+      prioOpts: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((v) => ({ v: v, label: t.prio[v] })),
+      zoneTypeOpts: ['SHELTER', 'EVACUATION_POINT', 'HIGH_GROUND'].map((v) => ({ v: v, label: t.zone[v] })),
+      zoneCards: zoneCards,
+      zoneDialog: s.zoneDialog,
+      openZoneDialog: () => this.setState({ zoneDialog: true }),
+      closeZoneDialog: () => this.setState({ zoneDialog: false }),
+      onSaveZone: () => { this.setState({ zoneDialog: false }); this.toast('zone'); },
+
+      alerts: alerts,
+      noAlerts: alerts.length === 0,
+      adminTabs: adminTabs,
+      drawer: s.drawer,
+      drawerItems: drawerItems,
+      deskNav: deskNav,
+      openDrawer: () => this.setState({ drawer: true }),
+      closeDrawer: () => this.setState({ drawer: false }),
+      dismissBanner: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ bannerDismissed: true }); },
+
+      showDetail: !!detailRaw,
+      detail: detail,
+      closeDetail: () => this.setState({ detailId: null }),
+      onDeleteReport: () => {
+        const id = s.detailId;
+        this.setState((st) => ({ deletedReports: Object.assign({}, st.deletedReports, { [id]: true }), detailId: null }));
+        this.toast('deleted');
+      },
+
+      showCritical: s.criticalOpen,
+      critical: banner0 ? { title: banner0.title[s.lang], msg: banner0.msg[s.lang], meta: t.alerts.from + ' \u00b7 ' + banner0.from + ' \u00b7 ' + ago(banner0.mins) } : {},
+      closeCritical: () => this.setState({ criticalOpen: false }),
+      onCriticalZones: () => this.setState({ criticalOpen: false, screen: 'dashboard', filterLevel: 'ALL' }),
+
+      showToast: !!s.toast,
+      toast: s.toast ? {
+        title: s.toast.title, sub: s.toast.sub, color: tm.color, bc: tm.bc,
+        isOk: s.toast.kind === 'ok', isWarn: s.toast.kind === 'warn', isInfo: s.toast.kind === 'info'
+      } : {},
+      closeToast: () => this.setState({ toast: null }),
+
+      goDash: this.go('dashboard'),
+      goSubmit: this.go('submit'),
+      goAlerts: this.go('alerts'),
+      goSignin: this.go('signin'),
+
+      auth: sSignup ? {
+        title: t.auth.upTitle, sub: t.auth.upSub, cta: t.auth.create,
+        switchLead: t.auth.hasAcct, switchCta: t.auth.signin, onSwitch: this.go('signin')
+      } : {
+        title: t.auth.inTitle, sub: t.auth.inSub, cta: t.auth.signin,
+        switchLead: t.auth.noAcct, switchCta: t.auth.signup, onSwitch: this.go('signup')
+      },
+      brgyOpts: ['Magliman', 'Lourdes', 'San Juan', 'Del Pilar', 'Santo Ni\u00f1o'],
+
+      ctlVp: this.seg([{ v: 'mobile', label: 'Mobile 390' }, { v: 'desktop', label: 'Desktop 1280' }], s.vp, (v) => this.setState({ vp: v })),
+      ctlRole: this.seg([{ v: 'resident', label: 'Resident' }, { v: 'official', label: 'Official' }], s.role, (v) => this.setState({ role: v, screen: v === 'resident' && s.screen === 'admin' ? 'dashboard' : s.screen })),
+      ctlLang: this.seg([{ v: 'en', label: 'EN' }, { v: 'tl', label: 'TL' }], s.lang, (v) => this.setState({ lang: v })),
+      ctlState: [
+        { v: 'live', label: 'Live' },
+        { v: 'loading', label: 'Loading' },
+        { v: 'empty', label: 'Empty' },
+        { v: 'offline', label: 'Offline' },
+        { v: 'critical', label: 'Critical alert' }
+      ].map((x) => {
+        const on = s.scenario === x.v;
+        return {
+          label: x.label,
+          bg: on ? 'rgb(23,23,23)' : '#ffffff',
+          fg: on ? '#fafafa' : 'rgb(82,82,82)',
+          bc: on ? 'rgb(23,23,23)' : 'rgb(229,229,229)',
+          onClick: () => this.setScenario(x.v)
+        };
+      }),
+      screenOpts: [
+        { v: 'dashboard', label: 'Dashboard \u2014 map' },
+        { v: 'submit', label: 'Submit report' },
+        { v: 'alerts', label: 'Alerts' },
+        { v: 'admin', label: 'Barangay panel' },
+        { v: 'signin', label: 'Sign in' },
+        { v: 'signup', label: 'Sign up' }
+      ],
+      onScreenSelect: (e) => {
+        const v = e.target.value;
+        this.setState({ screen: v, drawer: false, detailId: null, role: v === 'admin' ? 'official' : this.state.role });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

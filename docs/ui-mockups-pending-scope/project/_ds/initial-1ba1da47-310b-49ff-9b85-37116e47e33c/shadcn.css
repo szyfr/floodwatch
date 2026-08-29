@@ -1,0 +1,128 @@
+/* shadcn primitives — minimal CSS implementations of the components.
+   Used by preview cards and ui_kits. */
+@import url('./colors_and_type.css');
+
+/* ---- Button ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; padding: 0 16px;
+  border: 1px solid transparent; border-radius: 10px;
+  font-family: var(--font-ui); font-size: 14px; font-weight: 500; line-height: 1;
+  cursor: pointer; user-select: none; white-space: nowrap;
+  transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+.btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.btn-sm { height: 32px; padding: 0 12px; font-size: 14px; border-radius: 10px; }
+.btn-lg { height: 40px; padding: 0 24px; font-size: 14px; border-radius: 10px; }
+.btn-icon { width: 36px; padding: 0; }
+.btn-icon-sm { width: 32px; height: 32px; padding: 0; }
+
+.btn-primary { background: var(--primary); color: var(--primary-foreground); }
+.btn-primary:hover { background: rgb(38,38,38); }
+.btn-secondary { background: var(--secondary); color: var(--secondary-foreground); }
+.btn-secondary:hover { background: rgb(229,229,229); }
+.btn-destructive { background: var(--destructive); color: rgba(255,255,255,0.95); }
+.btn-destructive:hover { opacity: 0.9; }
+.btn-outline { background: #fff; color: var(--foreground); border-color: var(--border); box-shadow: var(--shadow-xs); }
+.btn-outline:hover { background: var(--muted); }
+.btn-ghost { background: transparent; color: var(--foreground); }
+.btn-ghost:hover { background: var(--muted); }
+.btn-link { background: transparent; color: var(--foreground); height: auto; padding: 0; text-decoration: none; }
+.btn-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* ---- Input ---- */
+.input {
+  height: 36px; padding: 4px 12px;
+  background: #fff; border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: var(--shadow-xs);
+  font-family: var(--font-sans); font-size: 14px; color: var(--foreground);
+  width: 100%;
+}
+.input::placeholder { color: var(--muted-foreground); }
+.input:focus { outline: none; border-color: var(--border-strong); box-shadow: var(--shadow-xs), 0 0 0 3px rgba(10,10,10,0.08); }
+.input-lg { height: 40px; font-size: 16px; }
+
+.label {
+  font-family: var(--font-sans); font-weight: 500; font-size: 14px; line-height: 20px;
+  color: var(--foreground); display: inline-block; margin-bottom: 8px;
+}
+
+/* ---- Card ---- */
+.card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.card-title { font-family: var(--font-sans); font-weight: 600; font-size: 20px; line-height: 28px; color: var(--foreground); margin: 0; }
+.card-desc { font-family: var(--font-sans); font-size: 14px; line-height: 20px; color: var(--muted-foreground); margin: 0; }
+
+/* ---- Badge ---- */
+.badge {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  height: 22px; padding: 0 10px;
+  border-radius: 10px;
+  font-family: var(--font-display); font-weight: 700; font-size: 12px; line-height: 1;
+}
+.badge-default { background: var(--primary); color: var(--primary-foreground); }
+.badge-secondary { background: var(--secondary); color: var(--secondary-foreground); }
+.badge-destructive { background: var(--destructive); color: #fff; }
+.badge-outline { background: transparent; color: var(--foreground); border: 1px solid var(--border); }
+.badge-dot { width: 22px; height: 22px; padding: 0; border-radius: 9999px; font-size: 11px; }
+
+/* ---- Alert ---- */
+.alert { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
+.alert-icon { flex: 0 0 auto; color: var(--foreground); }
+.alert-body { display: flex; flex-direction: column; gap: 4px; }
+.alert-title { font-family: var(--font-sans); font-weight: 500; font-size: 14px; line-height: 20px; color: var(--foreground); margin: 0; }
+.alert-desc { font-family: var(--font-sans); font-size: 14px; line-height: 20px; color: var(--muted-foreground); margin: 0; }
+.alert-destructive { border-color: rgba(220,38,38,0.5); }
+.alert-destructive .alert-icon,
+.alert-destructive .alert-title { color: var(--destructive); }
+.alert-destructive .alert-desc { color: rgba(220,38,38,0.9); }
+
+/* ---- Avatar ---- */
+.avatar { width: 40px; height: 40px; border-radius: 9999px; background: var(--muted); display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-sans); font-weight: 500; font-size: 14px; color: var(--muted-foreground); overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---- Switch ---- */
+.switch { position: relative; display: inline-block; width: 36px; height: 20px; background: var(--border); border-radius: 9999px; cursor: pointer; transition: background 120ms; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 9999px; box-shadow: var(--shadow-sm); transition: left 120ms; }
+.switch.on { background: var(--primary); }
+.switch.on::after { left: 18px; }
+
+/* ---- Checkbox ---- */
+.checkbox { width: 16px; height: 16px; border: 1px solid var(--border-strong); border-radius: 4px; background: #fff; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; }
+.checkbox.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+/* ---- Radio ---- */
+.radio { width: 16px; height: 16px; border: 1px solid var(--border-strong); border-radius: 9999px; background: #fff; display: inline-flex; align-items: center; justify-content: center; }
+.radio.on::after { content: ""; width: 8px; height: 8px; border-radius: 9999px; background: var(--primary); }
+
+/* ---- Tabs ---- */
+.tabs { display: inline-flex; background: var(--muted); border-radius: 10px; padding: 4px; gap: 2px; }
+.tab { padding: 6px 12px; border-radius: 6px; font-family: var(--font-sans); font-size: 14px; font-weight: 500; color: var(--muted-foreground); cursor: pointer; }
+.tab.active { background: #fff; color: var(--foreground); box-shadow: var(--shadow-xs); }
+
+/* ---- Tooltip ---- */
+.tooltip { background: var(--primary); color: var(--primary-foreground); padding: 6px 10px; border-radius: 8px; font-family: var(--font-sans); font-size: 12px; line-height: 16px; box-shadow: var(--shadow-md); }
+
+/* ---- Separator ---- */
+.sep { height: 1px; background: var(--border); border: none; margin: 0; }
+
+/* ---- Skeleton ---- */
+.skel { background: var(--muted); border-radius: 6px; height: 16px; animation: skel 1.5s ease-in-out infinite; }
+@keyframes skel { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ---- Progress ---- */
+.progress { height: 8px; background: var(--muted); border-radius: 9999px; overflow: hidden; }
+.progress > .bar { height: 100%; background: var(--primary); border-radius: 9999px; }
+
+/* ---- Table ---- */
+.tbl { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 14px; }
+.tbl th { text-align: left; padding: 10px 12px; font-weight: 500; font-size: 12px; color: var(--muted-foreground); border-bottom: 1px solid var(--border); }
+.tbl td { padding: 12px; border-bottom: 1px solid var(--border); color: var(--foreground); }
+.tbl tr:last-child td { border-bottom: none; }
+
+/* ---- Kbd ---- */
+.kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border: 1px solid var(--border); border-radius: 4px; background: var(--muted); font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+
+/* ---- Lucide icon helper (CDN) ---- */
+.icon { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.icon-20 { width: 20px; height: 20px; }
+.icon-24 { width: 24px; height: 24px; }
