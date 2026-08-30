@@ -201,7 +201,8 @@
 }
 
 .leaflet-container {
-  /* OSM's own land colour, so the gap before tiles arrive matches them. */
-  background: rgb(242, 239, 233);
+  /* OSM Bright's land colour, sampled from a tile, so the gap before they
+     arrive matches them rather than flashing a different shade. */
+  background: rgb(248, 244, 240);
   font-family: var(--fw-font-sans);
 }

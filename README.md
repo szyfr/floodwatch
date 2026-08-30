@@ -121,21 +121,34 @@ are dictionary keys — so a form renders the design's own error copy.
 
 ## The map
 
-One basemap at every zoom: OSM's own rendering, via `tile.openstreetmap.org`,
-capped at z19 — the deepest zoom where it still has real tiles over Pampanga.
+One basemap at every zoom: Stadia Maps' OSM Bright, capped at z20.
 
-The design mocked this up on Esri's Light Gray Canvas, which is a paler
-backdrop, but that service publishes no imagery above z16 anywhere in the world
-and answers deeper requests with a "Map data not yet available" placeholder.
-Since the zooms past 16 are exactly where a reporter places a pin, the app uses
-the layer that actually draws rivers, buildings, street names and the
-corner-store landmarks people navigate by.
+The design mocked this up on Esri's Light Gray Canvas. That service publishes
+no imagery above z16 anywhere in the world and answers deeper requests with a
+"Map data not yet available" placeholder — and the zooms past 16 are exactly
+where a reporter places a pin. OSM Bright draws the rivers, buildings, street
+names and corner-store landmarks people navigate by, all the way to z20.
 
-`tile.openstreetmap.org` is fine for development, but its usage policy covers
-limited, non-commercial use. Before this serves the province, point `TILE_URL`
-in `components/map/map-constants.ts` at your own tile server or a paid provider.
-Note the URL order if you switch: OSM and CARTO use `{z}/{x}/{y}`, Esri's ArcGIS
-services use `{z}/{y}/{x}`.
+Stadia's `alidade_smooth` is the closest thing to the design's paler backdrop
+and the style segment in `TILE_URL` is all that separates them. It was tried
+and rejected: at z17 over San Fernando it labels two streets to OSM Bright's
+five and renders buildings light-grey on white. Someone reporting a flood finds
+their street by its name, so legibility won over the mockup.
+
+**Development needs no setup**: Stadia exempts `localhost` and `127.0.0.1`
+under tight rate limits. **Production needs the site's hostname added** under
+Properties in the Stadia dashboard — authentication is by domain allowlist, so
+the browser's `Origin`/`Referer` is the credential and nothing ships in the
+bundle. An un-allowlisted hostname answers every tile with 401 and draws a
+blank map, and so does a `Referrer-Policy: no-referrer` header anywhere in the
+stack. `NEXT_PUBLIC_STADIA_API_KEY` is the escape hatch where a domain cannot
+be allowlisted; it is inlined at build time and therefore public.
+
+Tile URLs are addressed `{z}/{x}/{y}`, plus Leaflet's `{r}` retina placeholder.
+If you switch providers, note the axis order — OSM, CARTO and Stadia use
+`{z}/{x}/{y}`, Esri's ArcGIS services use `{z}/{y}/{x}` — and leave Leaflet's
+`detectRetina` off: `{r}` already covers high-DPI screens, while `detectRetina`
+would request tiles a zoom deeper and quadruple the count.
 
 ## Realtime
 

@@ -16,17 +16,55 @@ import {
 } from "@/lib/domain"
 
 /**
- * OSM's own rendering — the one free layer that draws buildings, street names
- * and the corner-store landmarks people actually navigate by, all the way down
- * to the zoom where a reporter drops a pin.
+ * Stadia Maps' OSM Bright: buildings with real outlines, road hierarchy in
+ * colour, and street names at the zooms where a reporter drops a pin.
+ *
+ * The design mocked this up on Esri's Light Gray Canvas, and Stadia's closest
+ * equivalent is `alidade_smooth` — swap the style segment below if you ever
+ * want it. It was tried and rejected for the same reason Light Gray Canvas
+ * was: at z17 over San Fernando it labels two streets to OSM Bright's five and
+ * renders buildings light-grey on white. A resident locating their flooded
+ * street navigates by those labels, so legibility beats the paler mockup.
  *
  * Addressed {z}/{x}/{y}. Esri's ArcGIS services use {z}/{y}/{x} — row before
  * column — so swapping providers means swapping this too.
+ *
+ * `{r}` is Leaflet's retina placeholder, and it resolves to "@2x" from
+ * `Browser.retina` alone — it does NOT need, and must not get, the
+ * `detectRetina` option. That option also halves `tileSize` and bumps
+ * `zoomOffset`, which asks for tiles a zoom level deeper and quadruples both
+ * the request count and the bill. `{r}` on its own buys a sharper map on the
+ * phones most reports come from at exactly the same number of tiles.
  */
-export const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-export const TILE_ATTRIBUTION = "© OpenStreetMap contributors"
-/** OSM has real tiles to 19; past that Leaflet would only upscale them. */
-export const TILE_MAX_ZOOM = 19
+const STADIA_API_KEY = process.env.NEXT_PUBLIC_STADIA_API_KEY
+
+/**
+ * Authentication is by domain allowlist: the browser sends `Origin` and
+ * `Referer`, Stadia matches them against the properties on the account, and no
+ * credential ever ships in the bundle. `localhost` and `127.0.0.1` are exempt
+ * (under tight rate limits), so development needs no setup at all.
+ *
+ * Two consequences worth knowing. Serving this app under a hostname that is
+ * not on the allowlist answers every tile with 401 and draws a blank map. And
+ * a `Referrer-Policy: no-referrer` header anywhere in the stack strips the
+ * evidence Stadia authenticates on, with the same result.
+ *
+ * `NEXT_PUBLIC_STADIA_API_KEY` is the escape hatch for anywhere a domain
+ * cannot be allowlisted. It is inlined into the client bundle at build time,
+ * so it is public by construction — restrict it to this property in the Stadia
+ * dashboard and treat it as published, never as a secret.
+ */
+export const TILE_URL =
+  "https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png" +
+  (STADIA_API_KEY ? `?api_key=${STADIA_API_KEY}` : "")
+
+export const TILE_ATTRIBUTION =
+  '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener noreferrer">Stadia Maps</a> ' +
+  '&copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> ' +
+  '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+
+/** OSM Bright has real tiles to 20 — one deeper than OSM's own raster. */
+export const TILE_MAX_ZOOM = 20
 
 /** Rivers, the focus ring, the picker pin and the selected pin all share it. */
 export const MAP_BLUE = "#2563eb"

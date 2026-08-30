@@ -318,6 +318,8 @@ export default function LeafletMap({
       })
       focusKeyRef.current = `${start.lat},${start.lng},${start.zoom}`
 
+      // No `detectRetina` here on purpose — TILE_URL's own `{r}` covers
+      // high-DPI screens, and the option would quadruple the tile count.
       L.tileLayer(TILE_URL, {
         maxZoom: TILE_MAX_ZOOM,
         attribution: TILE_ATTRIBUTION,
