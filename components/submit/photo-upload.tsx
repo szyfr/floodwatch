@@ -60,12 +60,19 @@ export function PhotoUpload({
       const { url } = await api.upload(file)
       onChange({ url, name: file.name, size: file.size })
     } catch (error) {
-      // A rejected file and a dropped connection need different advice — on
-      // this screen the second is the likelier of the two.
-      const rejected = error instanceof ApiRequestError
+      // Three different failures land here and they need different advice.
+      // Blaming the file for all of them sends people off to inspect a photo
+      // that was never the problem: a storage outage, an expired session and a
+      // genuinely rejected file are indistinguishable from the outside.
+      const status = error instanceof ApiRequestError ? error.status : 0
+      const badFile = status === 400 || status === 413 || status === 422
       showToast(
         t.toast.error,
-        rejected ? t.err.photo : t.toast.errorSub,
+        status === 0
+          ? t.toast.errorSub // no response at all — connection
+          : badFile
+            ? t.err.photo // the route really did reject this file
+            : t.err.generic, // reached us and we failed: storage, auth, 5xx
         "warn"
       )
     } finally {
