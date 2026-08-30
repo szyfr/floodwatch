@@ -4,6 +4,11 @@ A single Amazon EC2 instance, self-managed end to end: no Docker, no RDS, no S3,
 no load balancer. PostgreSQL, the Node process and nginx all live on the one
 box, supervised by systemd.
 
+Cloudflare sits in front as the public edge — it terminates the visitor's TLS,
+and the instance accepts connections from nothing else. That is the only part of
+this stack you do not run yourself; section 5 covers it, and also covers backing
+it out if you ever want to.
+
 Follow the sections in order — each assumes the previous one is done. Section 2
 installs and configures PostgreSQL but stops short of migrating: the checkout
 has to exist first, so `db:deploy` and `db:seed` live in section 3.
@@ -54,15 +59,21 @@ alongside the database.
 | Realtime   | Socket.io on `/ws`, same port, same process                |
 | Database   | PostgreSQL on the same instance, loopback only             |
 | Uploads    | `/srv/floodwatch/var/uploads` on the EBS root volume       |
-| Public edge| nginx on 80/443, TLS from Let's Encrypt                    |
+| Public edge| Cloudflare, proxying to nginx on 443 with a Cloudflare Origin CA cert |
 
 ```
-internet ──443──> nginx ──> 127.0.0.1:3000 ──> Next.js  ┐
-                    │                          Socket.io ┘ one node process
-                    └── /ws upgrade ───────────┘
-                                     127.0.0.1:5432 ──> PostgreSQL
-                                     /srv/floodwatch/var/uploads
+visitor ──443──> Cloudflare edge ──443──> nginx ──> 127.0.0.1:3000 ──> Next.js  ┐
+                 (TLS #1, real cert)  │   (TLS #2,                    Socket.io ┘ one
+                                      │    Origin CA)                    node process
+                                      └── /ws upgrade ──────────────────┘
+                                                    127.0.0.1:5432 ──> PostgreSQL
+                                                    /srv/floodwatch/var/uploads
 ```
+
+TLS is terminated twice: once at Cloudflare with a browser-trusted certificate,
+once at nginx with a Cloudflare Origin CA certificate that only Cloudflare
+accepts. The origin's firewall allows 443 from Cloudflare's ranges only, so the
+edge is the sole way in.
 
 ---
 
@@ -188,10 +199,17 @@ SG_ID=$(aws ec2 create-security-group \
 aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
   --ip-permissions "IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges=[{CidrIp=$ADMIN_CIDR,Description=admin-ssh}]"
 
-aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
-  --ip-permissions \
-    "IpProtocol=tcp,FromPort=80,ToPort=80,IpRanges=[{CidrIp=0.0.0.0/0}],Ipv6Ranges=[{CidrIpv6=::/0}]" \
-    "IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=0.0.0.0/0}],Ipv6Ranges=[{CidrIpv6=::/0}]"
+# 443 from Cloudflare's edge ranges only — never 0.0.0.0/0. Anyone who learns
+# this instance's address would otherwise bypass the edge entirely, and every
+# control Cloudflare applies stops applying.
+for ip in $(curl -s https://www.cloudflare.com/ips-v4); do
+  aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
+    --ip-permissions "IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=$ip,Description=cloudflare}]"
+done
+for ip in $(curl -s https://www.cloudflare.com/ips-v6); do
+  aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
+    --ip-permissions "IpProtocol=tcp,FromPort=443,ToPort=443,Ipv6Ranges=[{CidrIpv6=$ip,Description=cloudflare}]"
+done
 
 echo "SG_ID=$SG_ID"
 ```
@@ -199,9 +217,9 @@ echo "SG_ID=$SG_ID"
 That is the complete ruleset:
 
 - **22/tcp from `$ADMIN_CIDR` only.**
-- **80/tcp from anywhere** — required for certbot's HTTP-01 challenge and the redirect to HTTPS. You cannot skip it.
-- **443/tcp from anywhere** — the site, and the `/ws` WebSocket upgrade, which rides the same port and the same nginx server block.
-- **Default egress (allow all)** stays. The box needs to reach apt, NodeSource, GitHub (for bun and your repo), Let's Encrypt, and whichever map tile host you repoint to.
+- **443/tcp from Cloudflare's published ranges only** — the site, and the `/ws` WebSocket upgrade, which rides the same port and the same nginx server block. Cloudflare publishes these at `cloudflare.com/ips-v4` and `ips-v6` and changes them occasionally; re-run the loops above when they do.
+- **No port 80 at all.** With Cloudflare in Full (strict) the edge only ever connects to the origin on 443, and the Cloudflare Origin CA certificate needs no HTTP-01 challenge, so there is nothing for port 80 to serve. (The nginx config still carries a port-80 redirect block as a safety net for the day someone opens it.)
+- **Default egress (allow all)** stays. The box needs to reach apt, NodeSource, GitHub (for bun and your repo), Cloudflare, and whichever map tile host you point at.
 
 **Do not open 3000. Do not open 5432.** The Node server and PostgreSQL both bind loopback only and are reached exclusively through nginx and a Unix/localhost connection respectively. If you find yourself wanting to open 3000 to "test the app directly", you are about to discover the real reason it can't work: the session cookie is issued with `secure: true` whenever `NODE_ENV === "production"`, so a browser will silently refuse to store it over plain HTTP and sign-in will appear to fail with no error. Test through nginx and TLS or not at all.
 
@@ -238,7 +256,7 @@ aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
 
 ### Elastic IP and DNS
 
-An instance's default public IPv4 is released on stop/start, which would silently break your A record and, with it, certbot renewal. Allocate an Elastic IP and associate it before you touch DNS:
+An instance's default public IPv4 is released on stop/start, which would silently break the origin address Cloudflare forwards to. Allocate an Elastic IP and associate it before you touch DNS:
 
 ```bash
 # as: your workstation
@@ -255,20 +273,22 @@ echo "EIP=$EIP"
 
 AWS bills for every public IPv4 address, in use or not — budget roughly $3.60/month for it ($0.005/hour). An EIP left allocated after you terminate the instance keeps billing, so release it if you tear the stack down.
 
-Create a single **A record** pointing your hostname at that IP, TTL 300 while you are setting up:
+In the **Cloudflare** dashboard, create a single **A record** for your hostname pointing at that Elastic IP, with the proxy **enabled** (orange cloud). Cloudflare manages TTL for proxied records, so the TTL field is fixed at Auto.
 
 ```
-floodwatch.example.ph.   300   IN   A   <ELASTIC_IP>
+floodwatch.example.ph   A   <ELASTIC_IP>   Proxied
 ```
 
-Verify propagation before you run certbot in the TLS section — a failed HTTP-01 challenge burns against Let's Encrypt's rate limits:
+Then verify the name resolves to **Cloudflare**, not to your instance — that is what proxied means, and it is the check that the orange cloud is actually on:
 
 ```bash
 # as: your workstation
 dig +short floodwatch.example.ph @1.1.1.1
 ```
 
-The value must be the Elastic IP exactly. Do not add a CNAME or an AAAA record unless you have also given the instance a routable IPv6 address and opened 80/443 to `::/0` (the rules above do open IPv6, so an AAAA record is fine once the subnet actually assigns one).
+Those addresses should fall inside `curl -s https://www.cloudflare.com/ips-v4`. If the Elastic IP comes back instead, the record is grey-clouded (DNS-only): traffic would reach the origin directly, where the security group now refuses everything that is not Cloudflare, and the Origin CA certificate is not browser-trusted anyway. Turn the proxy on.
+
+Do not add an AAAA record unless the instance has a routable IPv6 address; Cloudflare serves IPv6 visitors from its own edge regardless of whether your origin speaks it.
 
 Now connect. Everything from here runs on the instance:
 
@@ -303,7 +323,7 @@ sudo timedatectl set-timezone Asia/Manila
 timedatectl
 ```
 
-This does **not** change any application data. The schema stores `DateTime` columns as absolute instants, the server only ever calls `new Date()` and `.toISOString()`, and the API serialises UTC. What it changes is what *you* read: `journalctl` output, PostgreSQL log lines, certbot renewal logs and backup filenames. During an actual flood, at 3 a.m., correlating a DRRM broadcast against a log line is much easier when both are in local time.
+This does **not** change any application data. The schema stores `DateTime` columns as absolute instants, the server only ever calls `new Date()` and `.toISOString()`, and the API serialises UTC. What it changes is what *you* read: `journalctl` output, PostgreSQL log lines, nginx logs and backup filenames. During an actual flood, at 3 a.m., correlating a DRRM broadcast against a log line is much easier when both are in local time.
 
 Enable unattended security upgrades:
 
@@ -510,8 +530,9 @@ ADMIN_CIDR="203.0.113.7/32"   # REPLACE with your real address before running an
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow from "$ADMIN_CIDR" to any port 22 proto tcp comment 'admin ssh'
-sudo ufw allow 80/tcp  comment 'http (redirect + acme)'
-sudo ufw allow 443/tcp comment 'https + /ws'
+for ip in $(curl -s https://www.cloudflare.com/ips-v4) $(curl -s https://www.cloudflare.com/ips-v6); do
+  sudo ufw allow from "$ip" to any port 443 proto tcp comment 'cloudflare'
+done
 
 sudo ufw show added            # read this before enabling — the 22 rule must be YOUR address
 sudo ufw --force enable
@@ -519,6 +540,8 @@ sudo ufw status verbose
 ```
 
 > The `203.0.113.7/32` above is a documentation placeholder. Enabling a default-deny firewall whose only SSH rule points at someone else's address locks you out of the instance for good — recovery means the EC2 serial console or detaching the root volume. Set `ADMIN_CIDR`, run `ufw show added`, and only then enable.
+
+That mirrors the security group: 443 from Cloudflare only, no port 80. Re-run the loop when Cloudflare changes its ranges — and note `ufw` rules are per-address, so this adds about twenty of them; `ufw status numbered` is how you prune the stale ones later.
 
 ufw does not filter loopback, so nginx→Node on 127.0.0.1:3000 and Node→PostgreSQL on 127.0.0.1:5432 are unaffected. If your ISP gives you a dynamic address, use a `/24` from your provider or an SSM Session Manager setup rather than opening 22 to the world.
 
@@ -568,8 +591,8 @@ swapon --show                         # /swapfile  file  2G
 df -h /                               # ~49G size, plenty available
 sudo ufw status verbose               # 22 from admin CIDR, 80, 443
 sudo systemctl is-active fail2ban     # active
-curl -s https://checkip.amazonaws.com # matches the Elastic IP
-dig +short floodwatch.example.ph @1.1.1.1   # matches the Elastic IP
+curl -s https://checkip.amazonaws.com # the instance's own Elastic IP
+dig +short floodwatch.example.ph @1.1.1.1   # Cloudflare edge IPs, NOT the Elastic IP
 ```
 
 The box is now ready for PostgreSQL, the application checkout and build, the systemd unit, and nginx with TLS.
@@ -1895,9 +1918,18 @@ The supported shape is one systemd unit, one process, one box. Vertical scaling 
 
 ## nginx reverse proxy, WebSocket upgrade and TLS
 
-The app listens on `127.0.0.1:3000` and speaks plain HTTP. nginx on the same instance terminates TLS, forwards normal requests, and forwards the Socket.io upgrade at `/ws`. Everything below runs **as root** (shown with `sudo`); nothing in this section runs as the `floodwatch` app user.
+Cloudflare sits in front of this instance. A visitor's TLS terminates at Cloudflare's edge; Cloudflare opens a second TLS connection to nginx on this box; nginx forwards to the app on `127.0.0.1:3000` and forwards the Socket.io upgrade at `/ws`. Everything below runs **as root** (shown with `sudo`); nothing in this section runs as the `floodwatch` app user.
 
 Replace `floodwatch.example.ph` everywhere, including inside the certificate paths.
+
+### What Cloudflare changes
+
+Four things differ from a bare nginx origin, and three of them are easy to get wrong:
+
+- **The certificate is a Cloudflare Origin CA cert, not Let's Encrypt.** It is valid for 15 years, needs no renewal timer and no port-80 ACME challenge — but it is **not browser-trusted**. Only Cloudflare accepts it. Grey-cloud the DNS record and visitors reach the origin directly and get a certificate warning.
+- **`$remote_addr` is a Cloudflare address, not the visitor's.** Without the real-IP config below, access logs are useless, any rate limiting keys on the wrong address, and fail2ban bans Cloudflare rather than the attacker.
+- **The origin must be locked to Cloudflare.** Otherwise anyone who learns the EC2 address bypasses the edge entirely, and everything Cloudflare is doing for you stops applying.
+- **Some edge features break this app.** Rocket Loader in particular reorders script execution and breaks React hydration.
 
 ### HTTPS is not optional for this app
 
@@ -1913,15 +1945,20 @@ export const sessionCookieOptions = {
 } as const
 ```
 
-The `start` script is `NODE_ENV=production tsx server.ts`, so on the box `secure` is always `true`. Over plain `http://` the browser silently discards the `Set-Cookie`: `POST /api/auth/signin` returns `200`, the UI navigates, and the very next request arrives with no session — sign-in *appears* to work and then quietly fails, with nothing in the server log.
+The unit runs with `NODE_ENV=production`, so on the box `secure` is always `true`. Over plain `http://` the browser silently discards the `Set-Cookie`: `POST /api/auth/signin` returns `200`, the UI navigates, and the very next request arrives with no session — sign-in *appears* to work and then quietly fails, with nothing in the server log.
 
-This never shows up in development because Chrome and Firefox treat `http://localhost` as a secure context and store `Secure` cookies there anyway. It appears the first time someone tests against `http://<ec2-public-ip>:3000` or an HTTP-only nginx. Do not spend an afternoon on it: finish TLS first.
+Cloudflare gives the browser HTTPS, so this is satisfied at the edge. It is still worth understanding, because it is exactly what you will see if you ever test against the origin's IP directly, or leave Cloudflare in **Flexible** mode while debugging something else.
 
 ### Before you start
 
-The `A` record for `floodwatch.example.ph` must already point at the instance's Elastic IP and have propagated — *Instance provisioning* covers both, and `dig +short floodwatch.example.ph @1.1.1.1` from off the instance is the check. certbot's HTTP-01 validation resolves the name from the outside, and every command below uses it.
+In the Cloudflare dashboard, the `A` record for `floodwatch.example.ph` points at the instance's Elastic IP and is **proxied** (orange cloud). The security group allows 443 from Cloudflare's ranges only — *Instance provisioning* covers both.
 
-The security group and `ufw` rules from that same section already allow 80 and 443. Port 80 must stay open permanently: certbot's HTTP-01 renewal needs it.
+Confirm the name resolves to Cloudflare rather than to your instance, which is what proxied means:
+
+```bash
+# your laptop — these should be Cloudflare addresses, NOT the Elastic IP
+dig +short floodwatch.example.ph @1.1.1.1
+```
 
 ### Install nginx
 
@@ -1931,13 +1968,13 @@ sudo apt install -y nginx
 sudo systemctl enable --now nginx
 ```
 
-Port 3000 must **not** be open to the internet. The systemd unit should set `HOSTNAME=127.0.0.1` so the custom server binds loopback only:
+Port 3000 must **not** be reachable from anywhere but this box. The `.env` sets `HOSTNAME=127.0.0.1` so the custom server binds loopback only:
 
 ```bash
 sudo ss -lntp | grep 3000     # expect 127.0.0.1:3000, not 0.0.0.0:3000
 ```
 
-Set it explicitly rather than leaving it unset. `server.ts` does `httpServer.listen(port, process.env.HOSTNAME ?? "localhost")`, and `localhost` resolves through the system resolver — if it comes back `::1` first the listener binds IPv6 loopback only and every `proxy_pass http://127.0.0.1:3000` below answers `502`. `HOSTNAME=127.0.0.1` removes the ambiguity.
+Set it explicitly rather than leaving it unset. `server.ts` does `httpServer.listen(port, process.env.HOSTNAME ?? "localhost")`, and `localhost` resolves through the system resolver — if it comes back `::1` first the listener binds IPv6 loopback only and every `proxy_pass http://127.0.0.1:3000` in the config answers `502`. `HOSTNAME=127.0.0.1` removes the ambiguity.
 
 Confirm the app answers on the loopback before nginx is in the picture. Everything after this point assumes this line prints `200`:
 
@@ -1947,20 +1984,32 @@ curl -sI http://127.0.0.1:3000/dashboard | head -1   # expect HTTP/1.1 200 OK
 
 (`/` is not the check to use: `app/page.tsx` is a bare `redirect("/dashboard")`, so it answers `307`.)
 
-### The `$connection_upgrade` map
+### The Cloudflare Origin certificate
 
-nginx has no built-in variable for this and `map` is only valid at `http` level, so it goes in its own file — `/etc/nginx/nginx.conf` includes `conf.d/*.conf` inside `http {}`:
+In the dashboard: **SSL/TLS → Origin Server → Create Certificate**. Accept the defaults (RSA, 15 years) and list both `floodwatch.example.ph` and `*.floodwatch.example.ph`. Cloudflare shows two blobs exactly once — paste each onto the box before closing the page:
 
 ```bash
-sudo tee /etc/nginx/conf.d/upgrade-map.conf >/dev/null <<'EOF'
-# Echo the client's Upgrade header back to the upstream; send "close" for
-# ordinary requests so they are never mislabelled as upgrades.
-map $http_upgrade $connection_upgrade {
-    default upgrade;
-    ''      close;
-}
-EOF
+sudo install -d -m 0700 /etc/ssl/cloudflare
+sudo nano /etc/ssl/cloudflare/floodwatch.pem   # paste the "Origin Certificate"
+sudo nano /etc/ssl/cloudflare/floodwatch.key   # paste the "Private Key"
+sudo chmod 0600 /etc/ssl/cloudflare/floodwatch.key
+sudo chmod 0644 /etc/ssl/cloudflare/floodwatch.pem
 ```
+
+This replaces certbot entirely on this box. Nothing renews, nothing needs port 80 open, and there is no renewal job that can fail 60 days from now with nobody watching. The trade is that the certificate is worthless to a browser — see *What Cloudflare changes* above.
+
+### Restoring the visitor's real IP, and the maps
+
+Behind Cloudflare every connection arrives from an edge address, so `$remote_addr` is Cloudflare rather than the visitor: access logs are useless, any rate limiting keys on the wrong address, and fail2ban bans Cloudflare instead of the attacker. The config restores it with `real_ip_header CF-Connecting-IP` plus a `set_real_ip_from` list of Cloudflare's published ranges — so that header is trusted **only** from those ranges and cannot be forged by anyone reaching the origin directly. Ubuntu's `nginx-core` is built `--with-http_realip_module`, so nothing extra needs installing.
+
+Cloudflare changes those ranges occasionally, and when they do the symptom is exactly the failure above. `deploy/nginx/refresh-cloudflare-ips.sh` rewrites the list in place:
+
+```bash
+sudo /srv/floodwatch/deploy/nginx/refresh-cloudflare-ips.sh /etc/nginx/sites-available/floodwatch
+sudo systemctl reload nginx
+```
+
+Two `map` blocks sit alongside it. `$connection_upgrade` echoes the client's `Upgrade` header back to the upstream and sends `close` for ordinary requests, so they are never mislabelled as an upgrade. `$fw_proto` passes Cloudflare's `X-Forwarded-Proto` through and falls back to the origin's own `$scheme` when the header is absent — which is what keeps the config correct under Cloudflare's **Flexible** mode too, where the origin hop is plain HTTP even though the visitor is on HTTPS.
 
 ### Worker capacity for long-lived sockets
 
@@ -1974,178 +2023,37 @@ events {
 
 `worker_processes auto;` (Ubuntu's default) already gives one worker per vCPU. Also raise the unit's file-descriptor limit if you go much higher — `sudo systemctl edit nginx` and set `LimitNOFILE=16384`.
 
-### Bootstrap the site on port 80
+Note that Cloudflare terminates the visitor's connection, so these are edge-to-origin sockets. Cloudflare does not pool or multiplex WebSockets: one viewer's socket is still one socket here.
 
-certbot's nginx plugin finds the block to edit by matching `server_name`, so a plain HTTP site has to exist first. This also lets you confirm the app is reachable before TLS is in the way (pages will render; sign-in will not work yet, for the reason above).
+### The configuration file
+
+The whole nginx configuration — both maps, the real-IP block and both server blocks — lives in the repo at **`deploy/nginx/floodwatch.conf`**, with its own README. That is the canonical copy; this section explains it rather than repeating it, so the two cannot drift.
 
 ```bash
-sudo tee /etc/nginx/sites-available/floodwatch >/dev/null <<'EOF'
-server {
-    listen 80;
-    listen [::]:80;
-    server_name floodwatch.example.ph;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-EOF
-
+cd /srv/floodwatch/deploy/nginx
+sudo cp floodwatch.conf /etc/nginx/sites-available/floodwatch
 sudo ln -sfn /etc/nginx/sites-available/floodwatch /etc/nginx/sites-enabled/floodwatch
-# Removes the symlink only; /etc/nginx/sites-available/default stays on disk.
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
-
-curl -sI http://floodwatch.example.ph/          | head -1   # expect 307 (-> /dashboard)
-curl -sI http://floodwatch.example.ph/dashboard | head -1   # expect HTTP/1.1 200 OK
 ```
 
-If DNS has not finished propagating yet, test the vhost without it:
+Replace `floodwatch.example.ph` first — it appears in `server_name` and in the port-80 redirect.
 
-```bash
-curl -sI --resolve floodwatch.example.ph:80:<elastic-ip> \
-  http://floodwatch.example.ph/dashboard | head -1
-```
+`nginx -t` must print `syntax is ok` / `test is successful` before the reload. `reload` is a graceful rebind — it does not drop in-flight requests, but it *does* close proxied WebSocket connections; clients reconnect on their own.
 
-With the default site gone, the floodwatch block becomes the box's default server, so raw-IP requests land here too. That stops being useful after TLS: a bare-IP request gets 301'd to `https://<ip>/` and then trips a certificate name mismatch. Expected — the certificate is for the name, not the address.
+It is deliberately **one file**. `sites-enabled/*` is included from inside nginx.conf's `http{}` block, which is what makes the `map` and `set_real_ip_from` directives legal there. Do not also place a copy of the maps under `conf.d/`: nginx then refuses to start with `duplicate map`.
 
-### Obtain the certificate with certbot --nginx
-
-DNS must already resolve to the instance (see above) and port 80 must be reachable from the internet.
-
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-
-sudo certbot --nginx \
-  -d floodwatch.example.ph \
-  -m ops@example.ph --agree-tos --no-eff-email --redirect
-```
-
-certbot edits the file in place. It duplicates the block into a **new `server` on 443** carrying `listen 443 ssl`, the `ssl_certificate` / `ssl_certificate_key` pair, `include /etc/letsencrypt/options-ssl-nginx.conf` and `ssl_dhparam`, and — because of `--redirect` — it inserts an `if ($host = floodwatch.example.ph) { return 301 https://$host$request_uri; }` plus a trailing `return 404;` **into the existing port-80 block**. It does not add `http2`, which is one of the reasons the file gets replaced below. Confirm what it wrote:
-
-```bash
-sudo certbot certificates
-sudo grep -n 'managed by Certbot' /etc/nginx/sites-available/floodwatch
-```
-
-### The final server block
-
-Replace the file with the version below, keeping the certificate paths exactly as `certbot certificates` reported them, and keeping the `include` and `ssl_dhparam` lines exactly as certbot wrote them — if your certbot did not emit an `ssl_dhparam` line, drop it here too, because `nginx -t` fails hard on a missing file. This is the config that actually gets the upload size, the WebSocket timeouts and the forwarded headers right.
-
-```nginx
-# /etc/nginx/sites-available/floodwatch
-
-server {
-    listen 80;
-    listen [::]:80;
-    server_name floodwatch.example.ph;
-
-    # Port 80 exists only to redirect. Renewal still works: certbot's nginx
-    # authenticator includes its own challenge server block at the top of
-    # http {}, ahead of sites-enabled, for the duration of the challenge.
-    # If you ever switch to --webroot, add a
-    #   location /.well-known/acme-challenge/ { root /var/www/html; }
-    # above this line, because `return` would otherwise swallow it.
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name floodwatch.example.ph;
-
-    ssl_certificate     /etc/letsencrypt/live/floodwatch.example.ph/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/floodwatch.example.ph/privkey.pem;
-    include             /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
-
-    access_log /var/log/nginx/floodwatch.access.log;
-    error_log  /var/log/nginx/floodwatch.error.log;
-
-    # POST /api/uploads: PHOTO_MAX_BYTES is 5 MiB and the route refuses any
-    # body over PHOTO_MAX_BYTES + 64 KiB = 5,308,416 bytes. nginx must sit
-    # ABOVE that ceiling so the app answers with its own 422 JSON — and below
-    # 10 MiB, which is Next's own proxy body-clone limit (see below).
-    client_max_body_size 8m;
-    client_body_timeout  60s;   # between two body reads, not total upload time
-
-    # Ubuntu's nginx.conf already has `gzip on`, but its default type list is
-    # text/html only. JPEG/PNG are deliberately absent — already compressed.
-    gzip on;
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_min_length 1024;
-    gzip_comp_level 5;
-    gzip_types
-        text/plain
-        text/css
-        text/javascript
-        application/javascript
-        application/json
-        application/manifest+json
-        application/rss+xml
-        image/svg+xml
-        font/woff2;
-
-    # ---- Socket.io -------------------------------------------------------
-    # server.ts attaches engine.io to the same HTTP listener at SOCKET_PATH
-    # ("/ws"). engine.io claims that path by PREFIX, and this prefix location
-    # mirrors it exactly.
-    location /ws {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade    $http_upgrade;
-        proxy_set_header Connection $connection_upgrade;
-
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host  $host;
-
-        # A socket is idle by design. The 60s default kills it the moment
-        # anything perturbs Socket.io's 25s heartbeat.
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
-
-        # Do not sit on engine.io's long-poll responses.
-        proxy_buffering off;
-    }
-
-    # ---- Everything else -------------------------------------------------
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-
-        # Also here, so realtime keeps working if NEXT_PUBLIC_SOCKET_PATH is
-        # ever changed and the /ws block above stops matching.
-        proxy_set_header Upgrade    $http_upgrade;
-        proxy_set_header Connection $connection_upgrade;
-
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host  $host;
-
-        proxy_read_timeout 300s;
-        proxy_send_timeout 300s;
-    }
-}
-```
-
-`listen 443 ssl http2;` is the form Ubuntu 24.04's nginx 1.24 wants. On nginx 1.25.1 or newer this still works but logs a deprecation warning; there you may write `listen 443 ssl;` plus a separate `http2 on;`. Check with `nginx -v` before changing it. HTTP/2 does not interfere with realtime: browsers open WebSocket connections over HTTP/1.1 regardless, because nginx does not advertise RFC 8441 extended CONNECT.
+Two details in it worth knowing before you edit it. `listen 443 ssl http2;` is the form Ubuntu 24.04's nginx 1.24 wants — on 1.25.1 or newer it still works but logs a deprecation warning, and there you may write `listen 443 ssl;` plus a separate `http2 on;`; check with `nginx -v`. And `default_server` on both listeners means a request with an unrecognised `Host` lands here rather than on nginx's stock welcome page — remove it if you ever host a second site on this box.
 
 ### Why the WebSocket block looks like that
 
-Strictly speaking a dedicated `location /ws` is not *required*: `proxy_http_version 1.1` plus the `Upgrade`/`Connection` pair on `location /` alone will proxy the handshake correctly, and the `map` guarantees ordinary requests are not mislabelled. It is not resilient, though — without a separate block you cannot give the long-lived socket a one-hour read timeout without imposing that timeout on every request, and you cannot disable response buffering for engine.io's polling transport without disabling it for the whole site. Hence: upgrade headers on **both** locations, dedicated tuning in `/ws`.
+Strictly speaking a dedicated `location /ws` is not *required*: `proxy_http_version 1.1` plus the `Upgrade`/`Connection` pair on `location /` alone will proxy the handshake correctly, and the `map` guarantees ordinary requests are not mislabelled. It is not resilient, though — without a separate block you cannot give the long-lived socket a one-hour read timeout without imposing that timeout on every request, and you cannot disable response buffering for engine.io's polling transport without disabling it site-wide. Hence: upgrade headers on **both** locations, dedicated tuning in `/ws`.
 
-Getting the upgrade right is not optional either. `components/providers/socket-provider.tsx` calls `io({ path: SOCKET_PATH, addTrailingSlash: false, transports: ["websocket", "polling"] })` and does **not** set `tryAllTransports`, which defaults to `false` in the bundled engine.io-client (`node_modules/engine.io-client/build/cjs/socket.js:512`). WebSocket is first in that list, so if nginx mishandles the upgrade the client raises a connection error and stops — it does not quietly fall back to polling. Broken upgrade means no realtime at all, not a slower realtime.
+Getting the upgrade right is not optional either. `components/providers/socket-provider.tsx` calls `io({ path: SOCKET_PATH, addTrailingSlash: false, transports: ["websocket", "polling"] })` and does **not** set `tryAllTransports`, which defaults to `false` in the bundled engine.io-client. WebSocket is first in that list, so if the upgrade is mishandled the client raises a connection error and stops — it does not quietly fall back to polling. A broken upgrade means no realtime at all, not a slower realtime.
 
 `proxy_read_timeout` is the one that bites. It measures the gap between two successive reads from the upstream, and its default is 60 seconds. Socket.io's server-side heartbeat fires every `pingInterval` — 25,000 ms by default — so a stock deployment survives on a 35-second margin. Anyone who raises `pingInterval`, or an event loop stalled by a slow Prisma query, drops every open socket at once; the clients reconnect, and the symptom is "the live feed flickers every minute" rather than an error anywhere. Set it explicitly.
+
+**Cloudflare must have WebSockets enabled** (Network → WebSockets), or the upgrade never reaches this box at all. It is on by default on every plan, but it is the first thing to check when the handshake works against the origin and fails through the edge.
 
 Also note `SOCKET_PATH = process.env.NEXT_PUBLIC_SOCKET_PATH || "/ws"`. Because the variable is `NEXT_PUBLIC_`, it is inlined into the client bundle at `next build` time. Changing it means a rebuild *and* editing the location prefix here — they must agree. And per the README, never add an App Router route under `/ws`.
 
@@ -2166,13 +2074,13 @@ return new URL(origin).origin !== new URL(request.url).origin
 
 Two things matter operationally.
 
-**`sec-fetch-site` is the branch that actually runs.** Every browser in current use sends it (Chromium and Firefox for years, Safari since 16.4), and nginx forwards unrecognised request headers untouched, so this works out of the box. The rule is negative: never add `proxy_set_header Sec-Fetch-Site ...`, never blank it with `proxy_set_header Sec-Fetch-Site "";` (that, not `proxy_hide_header`, is how a request header gets removed in nginx), and do not put a second proxy or CDN in front that strips it. If it disappears, every browser POST falls through to the Origin branch below and starts returning `403 {"code":"CROSS_SITE"}`.
+**`sec-fetch-site` is the branch that actually runs.** Every browser in current use sends it, and both Cloudflare and nginx forward unrecognised request headers untouched, so this works out of the box. The rule is negative: never add `proxy_set_header Sec-Fetch-Site ...`, never blank it with `proxy_set_header Sec-Fetch-Site "";`, and do not add a Cloudflare Transform Rule that strips or rewrites `Sec-Fetch-*`. If it disappears, every browser POST falls through to the Origin branch below and starts returning `403 {"code":"CROSS_SITE"}`.
 
-**The Origin fallback probably cannot be satisfied by header configuration in this deployment.** Because `server.ts` constructs Next with an explicit `hostname` and `port`, the URL Next hands to `proxy.ts` is built from *those* values plus `x-forwarded-proto` — `https://127.0.0.1:3000/api/...` — rather than from the `Host` header (`experimental.trustHostHeader` is not set in `next.config.ts`). Where that holds, `new URL(request.url).origin` can never equal `https://floodwatch.example.ph`, the fallback branch always rejects, and no `proxy_set_header` line will change it.
+**The Origin fallback probably cannot be satisfied by header configuration.** Because `server.ts` constructs Next with an explicit `hostname` and `port`, the URL Next hands to `proxy.ts` is built from *those* values plus `x-forwarded-proto` — `https://127.0.0.1:3000/api/...` — rather than from the `Host` header (`experimental.trustHostHeader` is not set in `next.config.ts`). Where that holds, `new URL(request.url).origin` can never equal `https://floodwatch.example.ph`, the fallback branch always rejects, and no `proxy_set_header` line will change it.
 
-Do not leave this to theory: *Operations → step 7* has a one-line curl that tells you which behaviour your build actually has. `401` means the fallback resolves your public origin and every client can write; `403` means only clients that send `Sec-Fetch-Site` can — which is every current browser, but not iOS Safari before 16.4, and never a page served over plain HTTP. Either way, getting `403 CROSS_SITE` from a *current* browser is always a "something ate `sec-fetch-site`" diagnosis.
+Do not leave this to theory: *Operations → step 7* has a one-line curl that tells you which behaviour your build actually has. `401` means the fallback resolves your public origin and every client can write; `403` means only clients that send `Sec-Fetch-Site` can — which is every current browser, but not iOS Safari before 16.4, and never a page served over plain HTTP.
 
-Set `Host $host` anyway — Next copies it into `x-forwarded-host`, and it keeps access logs and any future host-dependent behaviour honest. Set `X-Forwarded-Proto $scheme` too: Next only fills in the `x-forwarded-*` headers when they are absent (`??=`), and it is what makes the framework treat the request as HTTPS.
+Set `Host $host` anyway — Next copies it into `x-forwarded-host`, and it keeps access logs and any future host-dependent behaviour honest.
 
 ### Upload size
 
@@ -2183,82 +2091,79 @@ The numbers, from `lib/domain.ts` and `app/api/uploads/route.ts`:
 - `PHOTO_MAX_BYTES = 5 * 1024 * 1024` = 5,242,880 bytes
 - `MAX_BODY_BYTES = PHOTO_MAX_BYTES + 64 * 1024` = 5,308,416 bytes — the route rejects any declared `content-length` above this before buffering
 
-`client_max_body_size 8m` (8,388,608 bytes) sits well above the app's own ceiling, so oversize bodies are rejected by the route with structured JSON rather than by nginx with an HTML error page. Do not set it *equal* to 5,308,416 — multipart framing varies with the boundary string and field names, and you want the app to be the component that says no.
+`client_max_body_size 8m` sits above the app's own ceiling, so oversize bodies are rejected by the route with structured JSON rather than by nginx with an HTML error page. Do not set it *equal* to 5,308,416 — multipart framing varies with the boundary string and field names, and you want the app to be the component that says no.
 
-There is a ceiling on the other side too. `proxy.ts` matches `/api/:path*`, so Next clones the request body for the proxy, bounded by `experimental.proxyClientMaxBodySize` — default **10 MiB**. Past that Next *truncates* the clone and only logs a warning, so a `client_max_body_size` above `10m` would corrupt multipart uploads instead of rejecting them. Anything between `6m` and `10m` is safe — this guide uses `8m`; above that, raise the Next option in the same change.
+There is a ceiling on the other side too. `proxy.ts` matches `/api/:path*`, so Next clones the request body for the proxy, bounded by `experimental.proxyClientMaxBodySize` — default **10 MiB**. Past that Next *truncates* the clone and only logs a warning, so a `client_max_body_size` above `10m` would corrupt multipart uploads instead of rejecting them. Anything between `6m` and `10m` is safe — this guide uses `8m`.
+
+Cloudflare imposes its own request-body cap (100 MB on Free and Pro), which is far above anything this app accepts, so it never binds here.
 
 ### What may and may not be cached
 
-No `proxy_cache` is configured above, and that is deliberate. If you ever add one:
+No `proxy_cache` is configured above, and that is deliberate. The edge is now the cache that matters:
 
-- **`/api/*` must be excluded.** `proxy.ts` already stamps `cache-control: private, no-store` and `vary: cookie` on every `/api` response, and `/api/dashboard`, `/api/auth/me`, `/api/reports` are all per-viewer and live. A shared cache here serves one resident's session view to another.
-- **`/uploads/<uuid>.jpg` is the one thing that is safely cacheable.** `app/uploads/[name]/route.ts` returns `cache-control: public, max-age=31536000, immutable`, and the filename is a freshly minted UUID, so the bytes behind a URL never change. Browsers and any CDN will honour that header on their own; you get the win without configuring anything.
+- **`/api/*` must never be cached.** `proxy.ts` already stamps `cache-control: private, no-store` and `vary: cookie` on every `/api` response, and Cloudflare honours that. Add an explicit **Cache Rule** bypassing `/api/*` and `/ws*` anyway: it costs nothing, and it means a future config change cannot accidentally serve one resident's dashboard to another.
+- **`/uploads/<uuid>.jpg` is the one thing that is safely cacheable.** `app/uploads/[name]/route.ts` returns `cache-control: public, max-age=31536000, immutable`, and the filename is a freshly minted UUID, so the bytes behind a URL never change. Caching these at the edge takes real load off the single origin during an event.
+- **`/_next/static/*`** is content-hashed and immutable, and benefits the same way.
 
-Do not add `add_header Cache-Control ...` in this server block. `add_header` appends, so you would emit two `Cache-Control` headers and hand caches an ambiguous instruction that contradicts the app's per-route intent.
+Do not add `add_header Cache-Control ...` in this server block. `add_header` appends, so you would emit two `Cache-Control` headers and hand Cloudflare an ambiguous instruction that contradicts the app's per-route intent.
 
-### Certificate auto-renewal
+### Cloudflare dashboard settings
 
-The Debian package installs both `/etc/cron.d/certbot` and a systemd timer; the cron entry tests for `! -d /run/systemd/system` and exits immediately on a systemd host, so the timer is what actually runs.
+- **SSL/TLS → Overview → Full (strict).** Not Flexible: that leaves the Cloudflare-to-EC2 hop in plaintext across the public internet, and makes the Origin CA certificate pointless.
+- **SSL/TLS → Edge Certificates → Always Use HTTPS: on.**
+- **Network → WebSockets: on.** Without it `/ws` never reaches the origin.
+- **Speed → Optimization → Rocket Loader: off.** It reorders script execution and breaks React hydration.
+- **Cache Rules:** bypass cache for `/api/*` and `/ws*`.
+- **Bot Fight Mode:** leave off, or verify sign-in and report submission still work — it can challenge the API's non-navigational POSTs.
+
+### Locking the origin to Cloudflare
+
+Anyone who learns the EC2 address otherwise bypasses the edge, and every control above stops applying. Two layers, in increasing strength:
+
+**The security group** (covered in *Instance provisioning*) allows 443 from Cloudflare's published ranges only. Refresh it when they change:
 
 ```bash
-systemctl list-timers certbot.timer
-sudo systemctl status certbot.timer
-sudo certbot renew --dry-run
+# your workstation
+CF=$(curl -s https://www.cloudflare.com/ips-v4)
+for ip in $CF; do
+  aws ec2 authorize-security-group-ingress --group-id "$SG_ID" \
+    --ip-permissions "IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges=[{CidrIp=$ip,Description=cloudflare}]"
+done
 ```
 
-If `list-timers` shows nothing, the timer is not enabled — `sudo systemctl enable --now certbot.timer` — and re-check. `--dry-run` exercises the real HTTP-01 challenge against the staging endpoint, through the port-80 redirect block above; that is the check that proves the redirect did not break renewal. If it fails, renewal will fail 60 days from now with nobody watching.
-
-Add an explicit deploy hook so nginx picks up the new certificate. certbot's nginx *installer* usually reloads on its own, but the hook is unconditional and costs nothing:
+**Authenticated Origin Pulls** refuse any TLS client that cannot present Cloudflare's client certificate, so even a leaked address with a lapsed firewall rule gets rejected at the handshake:
 
 ```bash
-sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh >/dev/null <<'EOF'
-#!/bin/sh
-set -e
-/usr/bin/systemctl reload nginx
-EOF
-sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+sudo curl -fsSL -o /etc/ssl/cloudflare/origin-pull-ca.pem \
+  https://developers.cloudflare.com/ssl/static/authenticated_origin_pull_ca.pem
 ```
 
-Scripts in `renewal-hooks/deploy/` run only after a certificate is actually renewed, for every certificate on the box. Note that the reload closes every open WebSocket; clients reconnect, so schedule nothing around it, but do not be surprised by a burst of reconnects in the logs once every 60 days.
+Uncomment the two `ssl_client_certificate` / `ssl_verify_client` lines in the server block, enable it under **SSL/TLS → Origin Server → Authenticated Origin Pulls**, then `nginx -t && systemctl reload nginx`. Enable the dashboard toggle *before* reloading nginx, or Cloudflare's next request is refused and the site goes down.
 
 ### HSTS
 
-Add this **after** HTTPS is confirmed working end to end, not before — inside the `443` server block:
+Do this at the edge, not here: **SSL/TLS → Edge Certificates → HTTP Strict Transport Security**. Cloudflare is what browsers actually talk to, so an `add_header` on the origin is both redundant and easy to get wrong.
 
-```nginx
-    add_header Strict-Transport-Security "max-age=31536000" always;
-```
-
-The `always` keyword matters: without it the header is omitted on error responses. The usual caveats apply, and they are not theoretical for a service a province depends on. `max-age=31536000` commits every browser that has visited to refusing plain HTTP for this hostname for a year; you cannot recall it, only serve a shorter `max-age` to visitors who come back. Do not add `includeSubDomains` unless every current and future subdomain has a certificate, and do not add `preload` unless you accept that removal from the browser preload list takes months.
-
-One nginx behaviour to remember: `add_header` directives are inherited by a `location` only if that location declares no `add_header` of its own. Neither `location /ws` nor `location /` above declares one, so a server-level HSTS line reaches both. The moment you add any `add_header` inside either location, you must repeat the HSTS line there.
-
-### Enable the site, test, reload
-
-```bash
-sudo ln -sfn /etc/nginx/sites-available/floodwatch /etc/nginx/sites-enabled/floodwatch
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-`nginx -t` must print `syntax is ok` / `test is successful` before the reload. `reload` is a graceful rebind — it does not drop in-flight requests, but it *does* close proxied WebSocket connections; clients reconnect on their own.
+The usual caveats apply, and they are not theoretical for a service a province depends on. A one-year `max-age` commits every browser that has visited to refusing plain HTTP for this hostname for a year; you cannot recall it, only serve a shorter `max-age` to visitors who come back. Do not enable `includeSubDomains` unless every current and future subdomain has a certificate, and do not enable `preload` unless you accept that removal from the browser preload list takes months. Turn it on only once HTTPS is confirmed working end to end.
 
 ### Verify the whole path
 
 ```bash
-# Redirect and TLS
-curl -sI http://floodwatch.example.ph/dashboard  | head -2   # 301 -> https://...
-curl -sI https://floodwatch.example.ph/          | head -1   # HTTP/2 307 (-> /dashboard)
-curl -sI https://floodwatch.example.ph/dashboard | head -1   # HTTP/2 200
+# Redirect and TLS, through the edge
+curl -sI http://floodwatch.example.ph/dashboard  | head -3   # 301 -> https://...
+curl -sI https://floodwatch.example.ph/          | head -1   # 307 (-> /dashboard)
+curl -sI https://floodwatch.example.ph/dashboard | head -1   # 200
 
-# Engine.io polling handshake through nginx
+# Confirm you are actually going through Cloudflare
+curl -sI https://floodwatch.example.ph/dashboard | grep -i '^cf-ray\|^server'
+
+# Engine.io polling handshake through the edge
 curl -s "https://floodwatch.example.ph/ws?EIO=4&transport=polling"
 # expect: 0{"sid":"...","upgrades":["websocket"],"pingInterval":25000,...}
 
 # Real WebSocket upgrade. --http1.1 is required: with HTTP/2 enabled curl
 # would negotiate h2 and the Upgrade mechanism does not exist there.
-curl -i -N --http1.1 \
+curl -i -N --http1.1 --max-time 5 \
   -H "Connection: Upgrade" \
   -H "Upgrade: websocket" \
   -H "Sec-WebSocket-Version: 13" \
@@ -2269,23 +2174,31 @@ curl -i -N --http1.1 \
 
 Reading the failures correctly matters here:
 
-- A **400 with a tiny JSON body** (`{"code":3,"message":"Bad request"}`, or `code:5` if `EIO=4` is missing) came *from engine.io itself* — the proxy is fine, the query string is not.
-- An **HTML body**, i.e. Next's 404 page, means `/ws` fell through to the Next handler and engine.io never saw the request. Check the `location /ws` prefix against `NEXT_PUBLIC_SOCKET_PATH`, and check that nobody added an App Router route under `/ws`.
-- A **502** means nginx cannot reach `127.0.0.1:3000` at all — usually the loopback-binding trap at the top of this section, or the app unit is down.
+- A **Cloudflare-branded error page** (520, 521, 522, 526) is the edge failing to reach or trust the origin, not the app. `521` is the origin refusing the connection — check the security group and that nginx is running. `526` is an invalid origin certificate — the Origin CA cert is missing, mismatched, or Cloudflare is in Full (strict) with a self-signed cert.
+- A **400 with a tiny JSON body** (`{"code":3,"message":"Bad request"}`) came *from engine.io itself* — the proxy is fine, the query string is not.
+- An **HTML body**, i.e. Next's 404 page, means `/ws` fell through to the Next handler and engine.io never saw the request. Check the `location /ws` prefix against `NEXT_PUBLIC_SOCKET_PATH`, and that nobody added a route under `/ws`.
+- A **502** means nginx cannot reach `127.0.0.1:3000` — usually the loopback-binding trap above, or the app unit is down.
 
-Then check the CSRF guard end to end:
+Then confirm the real-IP config is working, which nothing else will tell you:
 
 ```bash
-# No Origin, no sec-fetch-site -> the route's own auth answers.
-curl -s -o /dev/null -w '%{http_code}\n' -X POST https://floodwatch.example.ph/api/reports
-# expect 401
-
-# Forged Origin -> proxy.ts rejects before the route runs.
-curl -s -X POST -H 'Origin: https://evil.example' https://floodwatch.example.ph/api/reports
-# expect {"error":"Cross-site request rejected","code":"CROSS_SITE"}
+# instance · root — your own address must appear, not a Cloudflare range
+sudo tail -5 /var/log/nginx/floodwatch.access.log
 ```
 
-Finally, do the two checks only a browser can do: sign in and confirm the session survives a reload (proves the `Secure` cookie is being stored), and open the map in two tabs and file a report in one — it must appear in the other without a refresh (proves the upgrade at `/ws` is live).
+Finally, the two checks only a browser can do: sign in and confirm the session survives a reload (proves the `Secure` cookie is being stored), and open the map in two tabs and file a report in one — it must appear in the other without a refresh (proves the upgrade at `/ws` is live end to end).
+
+### If you ever drop Cloudflare
+
+Point the DNS `A` record straight at the Elastic IP, reopen 80 and 443 to `0.0.0.0/0` in the security group, and swap the Origin CA certificate for a browser-trusted one:
+
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d floodwatch.example.ph \
+  -m ops@example.ph --agree-tos --no-eff-email --redirect
+```
+
+certbot rewrites the `ssl_certificate` lines in place; leave the rest of the server block as it is. Port 80 must then stay open permanently for HTTP-01 renewal, and `systemctl list-timers certbot.timer` plus `sudo certbot renew --dry-run` become things you actually have to check. Delete `/etc/nginx/conf.d/cloudflare-realip.conf` at the same time — with no Cloudflare in front, `CF-Connecting-IP` is an attacker-controlled header, and trusting it would let anyone forge their address in your logs.
 
 ---
 
@@ -2379,13 +2292,24 @@ openssl s_client -connect floodwatch.example.ph:443 -servername floodwatch.examp
   | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
 ```
 
-Expected: `301` (or `308`) with `Location: https://floodwatch.example.ph/`; a certificate issued by Let's Encrypt whose `subjectAltName` contains `DNS:floodwatch.example.ph`, with `notAfter` roughly 90 days out. Match the SAN, not the subject CN — Let's Encrypt has been dropping the Common Name field, so an empty subject is not a fault.
+Expected: `301` (or `308`) with `Location: https://floodwatch.example.ph/`, and a certificate **issued by Cloudflare** — that is the edge certificate the browser sees, not the Origin CA certificate on your box. Match the `subjectAltName`, not the subject CN.
+
+The origin's own certificate is a separate thing and is checked separately:
+
+```bash
+# instance · root — the Cloudflare Origin CA cert nginx presents to the edge
+openssl x509 -in /etc/ssl/cloudflare/floodwatch.pem -noout -subject -issuer -dates
+```
+
+Expect an issuer of `CloudFlare Origin SSL Certificate Authority` and a `notAfter` roughly 15 years out. There is nothing to renew and no timer to check — which is the point of using it.
 
 ```bash
 # instance · root
-certbot certificates
-certbot renew --dry-run
-systemctl list-timers --all | grep -i certbot
+# Confirm requests really are arriving via Cloudflare, not direct
+curl -sI https://floodwatch.example.ph/dashboard | grep -i '^cf-ray\|^server'
+
+# Confirm the origin refuses anyone who is not Cloudflare
+curl -sk --max-time 8 https://<ELASTIC_IP>/ -o /dev/null -w '%{http_code}\n' || echo "refused — correct" 
 ```
 
 **5. The app renders over HTTPS.**
@@ -3030,7 +2954,10 @@ Expected output: `UPDATE 1`. Existing sessions are JWTs and stay valid until the
 - [ ] `NEXT_PUBLIC_SOCKET_PATH` is the same in `/srv/floodwatch/.env` now as it was when `.next` was built — it is inlined into the client bundle.
 - [ ] `db:seed:demo` has never been run here — it replaces reports, alerts and zones wholesale.
 - [ ] No route exists or will ever be added under `app/ws/**`.
-- [ ] certbot's renewal timer is active and `certbot renew --dry-run` passes.
+- [ ] Cloudflare is in **Full (strict)**, Always Use HTTPS is on, WebSockets are on, and Rocket Loader is **off** (it breaks React hydration).
+- [ ] The DNS record is **proxied** (orange cloud): `dig +short` returns Cloudflare addresses, not the Elastic IP.
+- [ ] The security group allows 443 from Cloudflare's ranges only, and port 80 is not open. Connecting to the Elastic IP directly must fail.
+- [ ] `/etc/nginx/conf.d/cloudflare-realip.conf` exists and the access log shows real visitor addresses rather than Cloudflare ranges.
 - [ ] Nightly `pg_dump` **and** `var/uploads` backed up together, shipped off the instance, with a restore rehearsed at least once.
 - [ ] Swap configured if the instance has under 4 GB of RAM.
 - [ ] The step 7 `Origin`-only diagnostic answered `401` — or you have accepted, knowingly, that clients which do not send `Sec-Fetch-Site` (iOS Safari before 16.4) cannot write.
