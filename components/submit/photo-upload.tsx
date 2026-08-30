@@ -64,15 +64,18 @@ export function PhotoUpload({
       // Blaming the file for all of them sends people off to inspect a photo
       // that was never the problem: a storage outage, an expired session and a
       // genuinely rejected file are indistinguishable from the outside.
-      const status = error instanceof ApiRequestError ? error.status : 0
+      const failure = error instanceof ApiRequestError ? error : null
+      const status = failure?.status ?? 0
       const badFile = status === 400 || status === 413 || status === 422
       showToast(
         t.toast.error,
         status === 0
           ? t.toast.errorSub // no response at all — connection
-          : badFile
-            ? t.err.photo // the route really did reject this file
-            : t.err.generic, // reached us and we failed: storage, auth, 5xx
+          : failure?.code === "MODERATED"
+            ? t.err.photoContent // a valid file whose content was refused
+            : badFile
+              ? t.err.photo // the file really was the wrong format or too big
+              : t.err.generic, // reached us and we failed: storage, auth, 5xx
         "warn"
       )
     } finally {

@@ -38,6 +38,18 @@ const rejected = () =>
     fields: { file: "photo" },
   })
 
+/**
+ * Moderation refused the photo. A distinct code from `rejected()`, because the
+ * file itself was a valid JPG or PNG well under the size cap — answering with
+ * the format message would send the reporter off to fix something that was
+ * never wrong.
+ */
+const moderated = () =>
+  apiError("That photo was not accepted", 422, {
+    code: "MODERATED",
+    fields: { file: "photoContent" },
+  })
+
 export async function POST(request: NextRequest) {
   const auth = await requireUser()
   if (auth.response) return auth.response
@@ -93,7 +105,7 @@ export async function POST(request: NextRequest) {
       await deleteUpload(name).catch((error) =>
         console.error("[moderation] could not delete rejected photo", error)
       )
-      return rejected()
+      return moderated()
     }
   }
 

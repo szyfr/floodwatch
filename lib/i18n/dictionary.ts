@@ -116,6 +116,7 @@ export const en = {
     pin: "Drop a pin on the map or enter coordinates.",
     generic: "Something went wrong. Please try again.",
     photo: "That photo could not be uploaded. Use a JPG or PNG under 5MB.",
+    photoContent: "That photo was not accepted. Try a different one.",
   },
   alerts: {
     title: "Alerts",
@@ -370,6 +371,8 @@ export const tl: Dictionary = {
     generic: "May nangyaring mali. Subukan muli.",
     photo:
       "Hindi na-upload ang litrato. Gumamit ng JPG o PNG na wala pang 5MB.",
+    photoContent:
+      "Hindi tinanggap ang litratong iyon. Sumubok ng ibang litrato.",
   },
   alerts: {
     title: "Mga abiso",
