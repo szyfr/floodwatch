@@ -1203,7 +1203,6 @@ These are all the variables the code actually reads:
 | `REKOGNITION_MODERATION` | `lib/server/moderation.ts` | Optional. `on` enables photo moderation; anything else disables it. Requires `S3_BUCKET`. Fails open by design. |
 | `REKOGNITION_ALLOW_CATEGORIES` | `lib/server/moderation.ts` | Comma-separated top-level categories to let through. Empty means block everything Rekognition flags — including `Visually Disturbing`, which covers injuries and wreckage and will reject legitimate flood photos. |
 | `AWS_REGION` | AWS SDK | Only with `S3_BUCKET`. Credentials come from the EC2 instance role via IMDS — never put AWS keys in `.env`. |
-| `NEXT_PUBLIC_STADIA_API_KEY` | `components/map/map-constants.ts` | Optional, and normally **unset** — map tiles authenticate by domain allowlist instead. Also inlined at build time, so it is public; set it only where a hostname cannot be allowlisted. |
 | `NODE_ENV` | `server.ts`, `lib/db.ts`, `lib/auth/token.ts` | `production`. Set by the `start` script / systemd unit — leave it out of `.env`. |
 | `SEED_ADMIN_PASSWORD` | `prisma/seed-data.ts` | Seed only. Pass it inline for one command; **never** put it in `.env`. |
 
@@ -2949,7 +2948,7 @@ Expected output: `UPDATE 1`. Existing sessions are JWTs and stay valid until the
 
   `200` means the allowlist is right; `401` means it is not. Two related traps: do **not** add a `Referrer-Policy: no-referrer` header anywhere in nginx or the app, because it strips the evidence Stadia authenticates on; and **enable pay-as-you-go overage in the Stadia dashboard**, because every plan — free and paid — otherwise hard-stops at its credit limit with HTTP 429 until the next billing cycle, which would blank the map for the rest of the month during exactly the event this service exists for.
 
-- [ ] **Tile budget is sized for a flood, not for a quiet day.** Raster tiles cost 10–16 requests per map view, and one credit each. Measure a realistic pan-and-zoom in DevTools → Network (filter `png`), multiply by expected sessions, and pick the plan from that — a 10,000-session event day is on the order of a million tiles. `NEXT_PUBLIC_STADIA_API_KEY` stays unset unless a domain cannot be allowlisted; it is inlined at build time and therefore public.
+- [ ] **Tile budget is sized for a flood, not for a quiet day.** Raster tiles cost 10–16 requests per map view, and one credit each. Measure a realistic pan-and-zoom in DevTools → Network (filter `png`), multiply by expected sessions, and pick the plan from that — a 10,000-session event day is on the order of a million tiles.
 
   Any change to `TILE_URL`, `TILE_ATTRIBUTION` or `TILE_MAX_ZOOM` is compiled into the client bundle, so it needs `bun run build` and a restart — not just a restart. If you switch providers again, mind the axis order (Stadia, OSM and CARTO are `{z}/{x}/{y}`; Esri's ArcGIS services are `{z}/{y}/{x}`) and leave Leaflet's `detectRetina` off — `{r}` already handles high-DPI screens, while `detectRetina` requests tiles a zoom deeper and quadruples both the count and the bill.
 - [ ] Seeded official's password changed from `floodwatch` (see above), and the account's email/name updated if it is not the real operator.

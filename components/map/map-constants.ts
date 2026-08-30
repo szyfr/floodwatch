@@ -35,28 +35,26 @@ import {
  * `zoomOffset`, which asks for tiles a zoom level deeper and quadruples both
  * the request count and the bill. `{r}` on its own buys a sharper map on the
  * phones most reports come from at exactly the same number of tiles.
- */
-const STADIA_API_KEY = process.env.NEXT_PUBLIC_STADIA_API_KEY
-
-/**
- * Authentication is by domain allowlist: the browser sends `Origin` and
- * `Referer`, Stadia matches them against the properties on the account, and no
- * credential ever ships in the bundle. `localhost` and `127.0.0.1` are exempt
- * (under tight rate limits), so development needs no setup at all.
+ *
+ * Authentication is by domain allowlist, deliberately and only: the browser
+ * sends `Origin` and `Referer`, Stadia matches them against the properties on
+ * the account, and no credential exists to ship in the bundle. `localhost` and
+ * `127.0.0.1` are exempt (under tight rate limits), so development needs no
+ * setup at all.
  *
  * Two consequences worth knowing. Serving this app under a hostname that is
  * not on the allowlist answers every tile with 401 and draws a blank map. And
  * a `Referrer-Policy: no-referrer` header anywhere in the stack strips the
  * evidence Stadia authenticates on, with the same result.
  *
- * `NEXT_PUBLIC_STADIA_API_KEY` is the escape hatch for anywhere a domain
- * cannot be allowlisted. It is inlined into the client bundle at build time,
- * so it is public by construction — restrict it to this property in the Stadia
- * dashboard and treat it as published, never as a secret.
+ * There is no API-key fallback on purpose. Stadia's key travels as a query
+ * parameter, so on a public site it would be inlined into the client bundle at
+ * build time and published to every visitor. If some future host genuinely
+ * cannot be allowlisted, add the key here consciously — restricted to that
+ * property in the Stadia dashboard, and treated as published, never a secret.
  */
 export const TILE_URL =
-  "https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png" +
-  (STADIA_API_KEY ? `?api_key=${STADIA_API_KEY}` : "")
+  "https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png"
 
 export const TILE_ATTRIBUTION =
   '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener noreferrer">Stadia Maps</a> ' +

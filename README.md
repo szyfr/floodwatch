@@ -138,11 +138,11 @@ their street by its name, so legibility won over the mockup.
 **Development needs no setup**: Stadia exempts `localhost` and `127.0.0.1`
 under tight rate limits. **Production needs the site's hostname added** under
 Properties in the Stadia dashboard — authentication is by domain allowlist, so
-the browser's `Origin`/`Referer` is the credential and nothing ships in the
-bundle. An un-allowlisted hostname answers every tile with 401 and draws a
-blank map, and so does a `Referrer-Policy: no-referrer` header anywhere in the
-stack. `NEXT_PUBLIC_STADIA_API_KEY` is the escape hatch where a domain cannot
-be allowlisted; it is inlined at build time and therefore public.
+the browser's `Origin`/`Referer` is the credential and there is no key to ship
+in the bundle. An un-allowlisted hostname answers every tile with 401 and draws
+a blank map, and so does a `Referrer-Policy: no-referrer` header anywhere in
+the stack. There is no API-key fallback by design: Stadia passes its key as a
+query parameter, which on a public site means publishing it to every visitor.
 
 Tile URLs are addressed `{z}/{x}/{y}`, plus Leaflet's `{r}` retina placeholder.
 If you switch providers, note the axis order — OSM, CARTO and Stadia use
