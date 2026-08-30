@@ -1,0 +1,188 @@
+/* =============================================================
+   Pampanga Flood Watch — design tokens.
+   Lifted from the handoff bundle's design system
+   (docs/ui-mockups-pending-scope/project/_ds/.../colors_and_type.css)
+   and from the literal values in the prototype markup.
+
+   Namespaced `--fw-*` so they never collide with the shadcn/Tailwind
+   tokens already declared in app/globals.css.
+   ============================================================= */
+
+:root {
+  /* Surfaces */
+  --fw-bg: rgb(255, 255, 255);
+  --fw-bg-subtle: rgb(250, 250, 250);
+  --fw-bg-muted: rgb(245, 245, 245);
+  --fw-fg: rgb(10, 10, 10);
+  --fw-fg-secondary: rgb(64, 64, 64);
+  --fw-fg-tertiary: rgb(82, 82, 82);
+  --fw-fg-muted: rgb(115, 115, 115);
+  --fw-fg-faint: rgb(140, 140, 140);
+  --fw-fg-fainter: rgb(160, 160, 160);
+
+  /* Lines */
+  --fw-border: rgb(229, 229, 229);
+  --fw-border-soft: rgb(233, 233, 233);
+  --fw-border-softer: rgb(240, 240, 240);
+  --fw-border-strong: rgb(214, 214, 214);
+
+  /* Intent */
+  --fw-primary: #171717;
+  --fw-primary-fg: #fafafa;
+  --fw-accent: #2563eb;
+  --fw-accent-strong: #1d4ed8;
+  --fw-accent-bg: #eff6ff;
+  --fw-accent-border: #bfdbfe;
+  --fw-danger: #dc2626;
+  --fw-danger-bg: #fef2f2;
+  --fw-danger-border: #fecaca;
+  --fw-danger-deep: #7f1d1d;
+  --fw-danger-deeper: #991b1b;
+  --fw-success: #16a34a;
+  --fw-success-strong: #15803d;
+  --fw-success-bg: #dcfce7;
+  --fw-success-border: #86efac;
+  --fw-warn: #ea580c;
+  --fw-warn-bg: #fff7ed;
+  --fw-warn-border: #fed7aa;
+  --fw-amber-bg: #fffbeb;
+  --fw-amber-border: #fde68a;
+  --fw-amber-fg: #92400e;
+  --fw-amber-fg-soft: #b45309;
+  --fw-vote-down-bg: #fee2e2;
+  --fw-vote-down-fg: #b91c1c;
+
+  /* Water levels — must match lib/domain.ts LEVEL_META */
+  --fw-level-ankle: #fbbf24;
+  --fw-level-ankle-fg: #422006;
+  --fw-level-knee: #f97316;
+  --fw-level-car: #ef4444;
+  --fw-level-impassable: #991b1b;
+
+  /* Radii */
+  --fw-radius-sm: 6px;
+  --fw-radius-md: 8px;
+  --fw-radius-lg: 10px;
+  --fw-radius-xl: 12px;
+  --fw-radius-2xl: 14px;
+  --fw-radius-3xl: 16px;
+  --fw-radius-full: 9999px;
+
+  /* Shadows */
+  --fw-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --fw-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --fw-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --fw-shadow-card-new: 0 1px 2px rgba(37, 99, 235, 0.12);
+  --fw-shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --fw-shadow-dialog: 0 20px 40px -12px rgba(0, 0, 0, 0.35);
+  --fw-shadow-drawer: 0 10px 30px rgba(0, 0, 0, 0.18);
+  --fw-shadow-critical: 0 24px 50px -14px rgba(0, 0, 0, 0.6);
+  --fw-shadow-fab: 0 6px 16px -4px rgba(0, 0, 0, 0.35);
+
+  /* Type */
+  --fw-font-sans: var(--font-sans), "Geist", Inter, system-ui, sans-serif;
+  --fw-font-ui: var(--font-sans), Inter, system-ui, sans-serif;
+  --fw-font-mono: var(--font-mono), "Geist Mono", ui-monospace, monospace;
+
+  /* Layout */
+  --fw-header-h: 64px;
+  --fw-header-h-mobile: 56px;
+  --fw-list-w: 496px;
+  --fw-map-h-mobile: 262px;
+  --fw-form-max: 680px;
+  --fw-admin-max: 820px;
+
+  --fw-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animations used across the prototype. */
+@keyframes fw-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fw-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fw-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes fw-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes fw-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fw-shake-a {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+@keyframes fw-shake-b {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+@keyframes fw-count {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

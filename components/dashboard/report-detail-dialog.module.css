@@ -1,0 +1,230 @@
+/* Report detail dialog — design lines 847-915. */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-x` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  /* The design keeps an 18px gutter; the module rule is unlayered, so it has
+     to constrain the small-screen width itself. */
+  max-width: min(500px, calc(100% - 36px));
+  max-height: calc(100dvh - 36px);
+  padding: 24px;
+  overflow-y: auto;
+  border-radius: var(--fw-radius-xl);
+  background: var(--fw-bg);
+  box-shadow: var(--fw-shadow-dialog);
+  /* CSS Modules rewrite a bare animation name to a local one; the `fw-*`
+     keyframes are global (styles/tokens.css), so the name is passed through
+     a custom property to keep the reference intact. */
+  --fw-anim: fw-scale;
+  animation: var(--fw-anim) 200ms var(--fw-ease) both;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.headText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.level {
+  height: 24px;
+  padding: 0 11px;
+  border-radius: var(--fw-radius-full);
+  font: 700 12px/24px var(--fw-font-sans);
+}
+
+.verified {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--fw-success-strong);
+  font: 600 11px/1 var(--fw-font-sans);
+}
+
+.name {
+  font: 700 21px/27px var(--fw-font-sans);
+  color: var(--fw-fg);
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+.close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fw-radius-lg);
+  background: transparent;
+  color: var(--fw-fg-muted);
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--fw-bg-muted);
+}
+
+/* ----------------------------------------------------------------- photo */
+
+.photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 11px;
+  overflow: hidden;
+  background: var(--fw-bg-muted);
+}
+
+.photoImage {
+  object-fit: cover;
+}
+
+.desc {
+  font: 400 15px/23px var(--fw-font-sans);
+  color: rgb(38, 38, 38);
+  text-wrap: pretty;
+}
+
+/* ------------------------------------------------------------------ meta */
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 13px 14px;
+  border: 1px solid var(--fw-border-softer);
+  border-radius: 11px;
+  background: var(--fw-bg-subtle);
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 13px/18px var(--fw-font-sans);
+  color: var(--fw-fg-tertiary);
+}
+
+.metaCoords {
+  font: 400 12px/17px var(--fw-font-mono);
+  color: var(--fw-fg-muted);
+}
+
+/* ----------------------------------------------------------------- votes */
+
+.votes {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.vote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-lg);
+  background: var(--fw-bg);
+  color: var(--fw-fg-secondary);
+  font: 600 14px/1 var(--fw-font-ui);
+  cursor: pointer;
+}
+.vote:hover {
+  background: var(--fw-bg-subtle);
+}
+.voteUpOn,
+.voteUpOn:hover {
+  border-color: var(--fw-success-border);
+  background: var(--fw-success-bg);
+  color: var(--fw-success-strong);
+}
+.voteDownOn,
+.voteDownOn:hover {
+  border-color: var(--fw-danger-border);
+  background: var(--fw-vote-down-bg);
+  color: var(--fw-vote-down-fg);
+}
+
+.voted {
+  font: 500 12px/16px var(--fw-font-sans);
+  color: var(--fw-success-strong);
+}
+
+/* ----------------------------------------------------------- owner tools */
+
+.owner {
+  display: flex;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--fw-border-softer);
+}
+
+.edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-lg);
+  background: var(--fw-bg);
+  box-shadow: var(--fw-shadow-xs);
+  color: var(--fw-fg);
+  font: 500 14px/1 var(--fw-font-ui);
+  text-decoration: none;
+  cursor: pointer;
+}
+.edit:hover {
+  background: var(--fw-bg-muted);
+  color: var(--fw-fg);
+  text-decoration: none;
+}
+
+.delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(220, 38, 38, 0.32);
+  border-radius: var(--fw-radius-lg);
+  background: transparent;
+  color: var(--fw-danger);
+  font: 500 14px/1 var(--fw-font-ui);
+  cursor: pointer;
+}
+.delete:hover {
+  background: var(--fw-danger-bg);
+}
+.delete:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

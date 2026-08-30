@@ -1,0 +1,142 @@
+/* Provincial panel shell — design lines 576-590 and the routes tab, 699-708. */
+
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.column {
+  display: flex;
+  max-width: 100%;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0 auto;
+  padding: 16px 14px 40px;
+}
+
+@media (min-width: 768px) {
+  .column {
+    max-width: var(--fw-admin-max);
+    padding: 28px 24px 56px;
+  }
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.title {
+  font: 700 22px/28px var(--fw-font-sans);
+  color: var(--fw-fg);
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font: 400 13px/18px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+/* ------------------------------------------------------------- tab strip */
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tabList {
+  display: flex;
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 11px;
+  background: var(--fw-bg-muted);
+  overflow-x: auto;
+}
+
+.tab {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: auto;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--fw-radius-md);
+  background: transparent;
+  box-shadow: none;
+  font: 500 14px/1 var(--fw-font-ui);
+  color: var(--fw-fg-muted);
+  cursor: pointer;
+}
+
+.tab[data-active] {
+  background: var(--fw-bg);
+  color: var(--fw-fg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.panel {
+  flex: none;
+}
+
+/* ------------------------------------------------------------ routes tab */
+
+.routes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 11px;
+  padding: 38px 24px;
+  border: 1px dashed var(--fw-border);
+  border-radius: var(--fw-radius-2xl);
+  background: var(--fw-bg);
+  text-align: center;
+}
+
+.routesIcon {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-xl);
+  background: var(--fw-bg-subtle);
+  color: var(--fw-fg-faint);
+}
+
+.routesTitle {
+  font: 600 15px/20px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.routesSub {
+  max-width: 340px;
+  font: 400 13px/19px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+  text-wrap: pretty;
+}
+
+.drawButton {
+  height: auto;
+  min-height: 44px;
+  margin-top: 2px;
+  padding: 0 24px;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-lg);
+  background: var(--fw-bg);
+  box-shadow: var(--fw-shadow-xs);
+  font: 500 14px/1 var(--fw-font-ui);
+  color: var(--fw-fg);
+  opacity: 0.5;
+  /* The design keeps the not-allowed cursor on the disabled control. */
+  pointer-events: auto;
+  cursor: not-allowed;
+}

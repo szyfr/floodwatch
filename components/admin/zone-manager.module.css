@@ -1,0 +1,314 @@
+/* Safe zones tab — design lines 668-697, and the dialog at 917-968. */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addButton {
+  align-self: flex-start;
+  height: auto;
+  min-height: 44px;
+  gap: 8px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--fw-radius-lg);
+  background: var(--fw-primary);
+  font: 500 14px/1 var(--fw-font-ui);
+  color: var(--fw-primary-fg);
+  cursor: pointer;
+}
+.addButton:hover {
+  background: rgb(38, 38, 38);
+}
+
+.addIcon {
+  width: 17px;
+  height: 17px;
+}
+
+/* ------------------------------------------------------------- zone card */
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-xl);
+  background: var(--fw-bg);
+}
+
+.tile {
+  flex: none;
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--fw-radius-lg);
+  color: #fff;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-width: 180px;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.name {
+  font: 600 15px/20px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.pill {
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--fw-radius-full);
+  background: var(--fw-bg-muted);
+  font: 600 10px/20px var(--fw-font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fw-fg-secondary);
+}
+
+.coords {
+  font: 400 12px/17px var(--fw-font-mono);
+  color: var(--fw-fg-muted);
+}
+
+.meta {
+  font: 400 13px/18px var(--fw-font-sans);
+  color: var(--fw-fg-tertiary);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit,
+.delete {
+  height: auto;
+  min-height: 38px;
+  gap: 7px;
+  padding: 0 16px;
+  border-radius: var(--fw-radius-lg);
+  font: 500 14px/1 var(--fw-font-ui);
+  cursor: pointer;
+}
+
+.edit {
+  border: 1px solid var(--fw-border);
+  background: var(--fw-bg);
+  box-shadow: var(--fw-shadow-xs);
+  color: var(--fw-fg);
+}
+.edit:hover {
+  background: var(--fw-bg-muted);
+  color: var(--fw-fg);
+}
+
+.delete {
+  border: 1px solid rgba(220, 38, 38, 0.32);
+  background: transparent;
+  color: var(--fw-danger);
+}
+.delete:hover {
+  background: var(--fw-danger-bg);
+  color: var(--fw-danger);
+}
+
+.actionIcon {
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------------------------------------------------------------- dialog */
+
+/* No `position` here: the shared DialogContent already centres itself with
+   `fixed` + translate utilities, and a CSS Module rule is unlayered, so it
+   would win and drop the popup back into the flow. */
+.dialog {
+  display: flex;
+  width: 100%;
+  /* The design keeps an 18px gutter on small screens. */
+  max-width: min(500px, calc(100% - 36px));
+  max-height: calc(100dvh - 36px);
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border-radius: var(--fw-radius-xl);
+  background: var(--fw-bg);
+  box-shadow: var(--fw-shadow-dialog);
+  overflow-y: auto;
+  /* The keyframes are global (styles/tokens.css); a bare name here would be
+     rewritten to a module-local one that does not exist. */
+  --fw-anim: fw-scale;
+  animation: var(--fw-anim) 200ms var(--fw-ease) both;
+}
+
+.dialogHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.dialogTitle {
+  flex: 1;
+  font: 700 19px/25px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.close {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fw-radius-lg);
+  background: transparent;
+  color: var(--fw-fg-muted);
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--fw-bg-muted);
+  color: var(--fw-fg-muted);
+}
+
+.closeIcon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ----------------------------------------------------------- form fields */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wide {
+  flex: 1;
+  min-width: 170px;
+}
+.mid {
+  flex: 1;
+  min-width: 140px;
+}
+.narrow {
+  flex: 1;
+  min-width: 120px;
+}
+
+.label {
+  display: block;
+  margin: 0;
+  font: 500 14px/20px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.input,
+.select {
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  padding: 4px 12px;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-md);
+  background: var(--fw-bg);
+  box-shadow: var(--fw-shadow-xs);
+  font: 400 15px/21px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.input::placeholder {
+  color: var(--fw-fg-muted);
+}
+
+.input:focus-visible,
+.select:focus-visible {
+  outline: none;
+  border-color: var(--fw-border-strong);
+  box-shadow:
+    var(--fw-shadow-xs),
+    0 0 0 3px rgba(10, 10, 10, 0.08);
+}
+
+.select {
+  justify-content: space-between;
+  padding-right: 11px;
+  cursor: pointer;
+}
+
+.select svg {
+  color: var(--fw-fg-muted);
+}
+
+/* Leaflet fills its parent absolutely, so the box owns the height. */
+.map {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  height: 190px;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-lg);
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- footer */
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 6px;
+}
+
+.cancel,
+.save {
+  height: auto;
+  min-height: 44px;
+  padding: 0 24px;
+  border-radius: var(--fw-radius-lg);
+  font: 500 14px/1 var(--fw-font-ui);
+  cursor: pointer;
+}
+
+.cancel {
+  border: 1px solid var(--fw-border);
+  background: var(--fw-bg);
+  box-shadow: var(--fw-shadow-xs);
+  color: var(--fw-fg);
+}
+.cancel:hover {
+  background: var(--fw-bg-muted);
+  color: var(--fw-fg);
+}
+
+.save {
+  border: 0;
+  background: var(--fw-primary);
+  color: var(--fw-primary-fg);
+}
+.save:hover {
+  background: rgb(38, 38, 38);
+}

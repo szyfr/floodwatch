@@ -1,0 +1,277 @@
+/* Submit a report — design lines 427-535. */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-x` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 14px 40px;
+}
+
+@media (min-width: 768px) {
+  .page {
+    max-width: var(--fw-form-max);
+    padding: 28px 24px 56px;
+  }
+}
+
+/* ------------------------------------------------------------------ header */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-lg);
+  box-shadow: var(--fw-shadow-xs);
+  color: var(--fw-fg);
+}
+.back:hover {
+  background: var(--fw-bg-muted);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  margin: 0;
+  font: 700 22px/28px var(--fw-font-sans);
+  letter-spacing: -0.01em;
+  color: var(--fw-fg);
+}
+
+.subtitle {
+  font: 400 13px/18px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+/* -------------------------------------------------------------------- card */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-2xl);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.sectionWhere {
+  gap: 8px;
+}
+.sectionLevel {
+  gap: 9px;
+}
+.sectionSend {
+  gap: 9px;
+  padding-top: 2px;
+}
+
+.label {
+  display: block;
+  margin: 0;
+  font: 500 14px/20px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+/* --------------------------------------------------------------- map + pin */
+
+/* Leaflet fills this box absolutely, so it must stay positioned and sized.
+   `isolation` keeps the map's stacking context out of the card's. */
+.mapBox {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  height: 230px;
+  overflow: hidden;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-lg);
+}
+.mapBoxError {
+  border-color: var(--fw-danger);
+}
+
+.hint {
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+.coords {
+  display: flex;
+  gap: 10px;
+}
+
+.coord {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.coordLabel {
+  display: block;
+  margin: 0;
+  font: 500 12px/16px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+/* ------------------------------------------------------------- form fields */
+
+.input {
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  padding: 4px 12px;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-md);
+  box-shadow: var(--fw-shadow-xs);
+  font: 400 15px/21px var(--fw-font-sans);
+  color: var(--fw-fg);
+  outline: none;
+  transition:
+    border-color 120ms var(--fw-ease),
+    box-shadow 120ms var(--fw-ease);
+}
+.input::placeholder {
+  color: var(--fw-fg-muted);
+}
+.input:focus,
+.input:focus-visible {
+  border-color: var(--fw-border-strong);
+  box-shadow:
+    var(--fw-shadow-xs),
+    0 0 0 3px rgba(10, 10, 10, 0.08);
+}
+/* `aria-invalid` stays for screen readers, but the primitive's own destructive
+   ring is heavier than the design's single red border, so it is neutralised. */
+.inputError[aria-invalid="true"] {
+  border-color: var(--fw-danger);
+  box-shadow: var(--fw-shadow-xs);
+}
+
+.mono {
+  font-family: var(--fw-font-mono);
+  font-size: 13px;
+}
+
+.select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 11px 4px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.select > svg {
+  flex: none;
+  color: var(--fw-fg-muted);
+}
+
+.selectContent {
+  padding: 4px;
+  font-family: var(--fw-font-sans);
+}
+
+.selectItem {
+  min-height: 36px;
+  padding-left: 10px;
+  font-size: 14px;
+}
+
+.textarea {
+  min-height: 84px;
+  padding: 10px 12px;
+  /* The design's handle: content-sizing would fight the manual resize. */
+  field-sizing: normal;
+  resize: vertical;
+}
+
+.counter {
+  align-self: flex-end;
+  font: 400 11px/14px var(--fw-font-mono);
+  color: var(--fw-fg-faint);
+}
+
+/* ------------------------------------------------------------------ errors */
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 12px/16px var(--fw-font-sans);
+  color: var(--fw-danger);
+}
+
+.errorIcon {
+  flex: none;
+}
+
+/* Two identical animations: swapping the class is what restarts the shake
+   when the same field fails a second time. */
+.shakeA {
+  --fw-anim: fw-shake-a;
+  animation: var(--fw-anim) 320ms ease;
+}
+.shakeB {
+  --fw-anim: fw-shake-b;
+  animation: var(--fw-anim) 320ms ease;
+}
+
+/* -------------------------------------------------------------------- send */
+
+.send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  height: auto;
+  min-height: 50px;
+  padding: 0 24px;
+  border: 1px solid transparent;
+  border-radius: var(--fw-radius-lg);
+  font: 500 15px/1 var(--fw-font-sans);
+  cursor: pointer;
+}
+
+/* Sized here as well as on the icon: the button resets bare svg children. */
+.spinner {
+  width: 18px;
+  height: 18px;
+  --fw-anim: fw-spin;
+  animation: var(--fw-anim) 700ms linear infinite;
+}
+
+.queueNote {
+  text-align: center;
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-amber-fg-soft);
+}

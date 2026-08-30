@@ -1,0 +1,309 @@
+// Pampanga Flood Watch — data model.
+// Mirrors the entities the design bundle describes: cities/municipalities,
+// citizen flood reports with crowd votes, DRRM broadcast alerts, safe zones
+// and PAGASA-style river gauges.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// Prisma 7 takes the connection string from prisma7.config.ts, not from here.
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- enums
+
+enum Role {
+  RESIDENT
+  OFFICIAL
+}
+
+/// Water depth buckets offered on the submit form.
+enum WaterLevel {
+  ANKLE
+  KNEE
+  CAR_DEEP
+  IMPASSABLE
+}
+
+enum AlertPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AlertType {
+  FLOOD_WARNING
+  EVACUATION_ORDER
+  ROAD_CLOSURE
+  GENERAL
+}
+
+/// Broadcast target: the whole province, or the LGUs listed in AlertArea.
+enum AlertScope {
+  PROVINCE
+  AREAS
+}
+
+enum ZoneType {
+  SHELTER
+  EVACUATION_POINT
+  HIGH_GROUND
+}
+
+/// PAGASA alarm ladder for river gauges.
+enum AlarmLevel {
+  NORMAL
+  FIRST
+  SECOND
+  THIRD
+}
+
+enum GaugeTrend {
+  RISING
+  STEADY
+  FALLING
+}
+
+enum VoteValue {
+  UP
+  DOWN
+}
+
+// ---------------------------------------------------------------- models
+
+/// A Pampanga city or municipality. `slug` is the stable id used in URLs,
+/// socket rooms and the map ("sf", "candaba", …).
+model Lgu {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  name                String
+  lat                 Float
+  lng                 Float
+  isCity              Boolean  @default(false)
+  registeredResidents Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  users      User[]
+  reports    FloodReport[]
+  zones      SafeZone[]
+  gauges     RiverGauge[]
+  alertAreas AlertArea[]
+  routes     EvacuationRoute[]
+
+  @@index([name])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role     @default(RESIDENT)
+  /// Office a DRRM account speaks for, shown on the reports they file.
+  organisation String?
+  language     String   @default("en")
+  lguId        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lgu             Lgu               @relation(fields: [lguId], references: [id], onDelete: Restrict)
+  reports         FloodReport[]     @relation("ReportAuthor")
+  verifiedReports FloodReport[]     @relation("ReportVerifier")
+  votes           ReportVote[]
+  alerts          Alert[]
+  alertDismissals AlertDismissal[]
+  zones           SafeZone[]
+  routes          EvacuationRoute[]
+
+  @@index([lguId])
+}
+
+/// One citizen sighting of flooding at a point.
+model FloodReport {
+  id            String     @id @default(cuid())
+  lguId         String
+  locationName  String
+  description   String?
+  /// Tagalog rendering, when one exists (seeded content ships bilingual).
+  descriptionTl String?
+  waterLevel    WaterLevel
+  lat           Float
+  lng           Float
+  photoUrl      String?
+  /// Idempotency key from the offline queue, so a retry cannot file the same
+  /// sighting twice.
+  clientId      String?
+  /// Denormalised tallies, kept in step with ReportVote inside a transaction.
+  upvotes       Int        @default(0)
+  downvotes     Int        @default(0)
+  verifiedAt    DateTime?
+  verifiedById  String?
+  authorId      String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  /// Soft delete — the map drops it, the audit trail keeps it.
+  deletedAt     DateTime?
+
+  lgu        Lgu          @relation(fields: [lguId], references: [id], onDelete: Cascade)
+  author     User?        @relation("ReportAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  verifiedBy User?        @relation("ReportVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  votes      ReportVote[]
+
+  @@unique([authorId, clientId])
+  @@index([lguId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([deletedAt])
+  @@index([authorId])
+}
+
+/// One vote per person per report; switching direction updates in place.
+model ReportVote {
+  id        String    @id @default(cuid())
+  reportId  String
+  userId    String
+  value     VoteValue
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  report FloodReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, userId])
+  @@index([userId])
+}
+
+/// A DRRM broadcast. `scope = PROVINCE` reaches everyone; `AREAS` reaches the
+/// LGUs joined through AlertArea.
+model Alert {
+  id        String        @id @default(cuid())
+  title     String
+  titleTl   String?
+  message   String
+  messageTl String?
+  type      AlertType
+  priority  AlertPriority
+  scope     AlertScope    @default(PROVINCE)
+  /// Office shown to residents, e.g. "PDRRMO Pampanga".
+  sentBy    String
+  authorId  String?
+  active    Boolean       @default(true)
+  expiresAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  author     User?            @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  areas      AlertArea[]
+  dismissals AlertDismissal[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([active])
+}
+
+model AlertArea {
+  alertId String
+  lguId   String
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  lgu   Lgu   @relation(fields: [lguId], references: [id], onDelete: Cascade)
+
+  @@id([alertId, lguId])
+  @@index([lguId])
+}
+
+/// Per-person dismissal, so one resident clearing an alert does not clear it
+/// for the province.
+model AlertDismissal {
+  alertId     String
+  userId      String
+  dismissedAt DateTime @default(now())
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([alertId, userId])
+  @@index([userId])
+}
+
+/// Shelter, evacuation point or high ground residents can head for.
+model SafeZone {
+  id            String    @id @default(cuid())
+  lguId         String
+  name          String
+  type          ZoneType
+  lat           Float
+  lng           Float
+  capacity      Int?
+  occupancy     Int       @default(0)
+  contactName   String?
+  contactPhone  String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  lgu       Lgu   @relation(fields: [lguId], references: [id], onDelete: Cascade)
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([lguId])
+  @@index([deletedAt])
+}
+
+/// A river gauge station and its latest observation.
+model RiverGauge {
+  id            String     @id @default(cuid())
+  code          String     @unique
+  lguId         String
+  name          String
+  lat           Float
+  lng           Float
+  readingMetres Float
+  alarmLevel    AlarmLevel @default(NORMAL)
+  trend         GaugeTrend @default(STEADY)
+  /// Metres per hour; negative when falling.
+  deltaPerHour  Float      @default(0)
+  observedAt    DateTime   @default(now())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  lgu      Lgu            @relation(fields: [lguId], references: [id], onDelete: Cascade)
+  readings GaugeReading[]
+
+  @@index([lguId])
+}
+
+/// Observation history, so trend and delta are derived rather than asserted.
+model GaugeReading {
+  id            String     @id @default(cuid())
+  gaugeId       String
+  readingMetres Float
+  alarmLevel    AlarmLevel
+  observedAt    DateTime   @default(now())
+
+  gauge RiverGauge @relation(fields: [gaugeId], references: [id], onDelete: Cascade)
+
+  @@index([gaugeId, observedAt(sort: Desc)])
+}
+
+/// Phase 2 in the design — the model exists so route drawing has somewhere to
+/// land; the panel still shows the empty state until drawing ships.
+model EvacuationRoute {
+  id          String    @id @default(cuid())
+  lguId       String
+  name        String
+  /// GeoJSON LineString coordinates: [[lng, lat], …]
+  path        Json
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  lgu       Lgu   @relation(fields: [lguId], references: [id], onDelete: Cascade)
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([lguId])
+}

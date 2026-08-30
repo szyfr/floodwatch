@@ -1,0 +1,133 @@
+/* Alert card — design lines 550-568. */
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 15px 15px 16px;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  /* The inline style supplies the colour; the width has to live here. */
+  border-left-width: 4px;
+  border-left-style: solid;
+  border-radius: var(--fw-radius-xl);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.priority,
+.type,
+.area {
+  flex: none;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--fw-radius-full);
+}
+
+.priority {
+  color: #fff;
+  font: 700 10px/20px var(--fw-font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.type {
+  background: var(--fw-bg-muted);
+  color: var(--fw-fg-secondary);
+  font: 600 11px/20px var(--fw-font-sans);
+}
+
+/* The pill is a fixed 20px tall, so a long multi-area list has to truncate
+   inside it rather than wrap out of it. */
+.area {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  background: var(--fw-accent-bg);
+  color: var(--fw-accent-strong);
+  font: 600 11px/20px var(--fw-font-sans);
+}
+
+.areaLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.area svg {
+  flex: none;
+}
+
+.ago {
+  margin-left: auto;
+  padding-left: 4px;
+  font: 400 11px/14px var(--fw-font-sans);
+  color: var(--fw-fg-faint);
+  white-space: nowrap;
+}
+
+.title {
+  margin: 0;
+  font: 600 16px/22px var(--fw-font-sans);
+  color: var(--fw-fg);
+  text-wrap: pretty;
+}
+
+.message {
+  margin: 0;
+  font: 400 14px/21px var(--fw-font-sans);
+  color: var(--fw-fg-secondary);
+  text-wrap: pretty;
+}
+
+.from {
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-fg-faint);
+}
+
+.dismiss {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--fw-radius-lg);
+  background: transparent;
+  color: var(--fw-fg-faint);
+}
+
+.dismiss:hover {
+  background: var(--fw-bg-muted);
+  color: var(--fw-fg-secondary);
+}
+
+.dismiss svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* The design draws a 32px control; touch needs 44px, which costs no pixels. */
+@media (max-width: 767px) {
+  .dismiss::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+}

@@ -1,0 +1,207 @@
+/* Marker, chrome and skeleton styling for the flood map, reconstructed from the
+   <style> the prototype injected (pampanga-map.js:29-59).
+
+   This is PLAIN GLOBAL CSS on purpose. A CSS Module would hash both the class
+   names and the @keyframes names, and every marker body here is a raw HTML
+   string handed to L.divIcon() — the hashed names would never match, so the
+   markers would render unstyled. Leaflet's own .leaflet-* classes have the
+   same problem. Import it from a client component. */
+
+@keyframes pm-pop {
+  from {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pm-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  75% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+
+@keyframes pm-shimmer {
+  0% {
+    background-position: -340px 0;
+  }
+  100% {
+    background-position: 340px 0;
+  }
+}
+
+.pm-pin {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  animation: pm-pop 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.pm-dot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  font: 700 12px/1 var(--fw-font-sans);
+  letter-spacing: 0.02em;
+}
+
+.pm-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--pm-c);
+  animation: pm-ring 1.9s ease-out infinite;
+}
+
+.pm-sel .pm-dot {
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.pm-bub {
+  position: relative;
+  animation: pm-pop 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  cursor: pointer;
+}
+
+.pm-bub b {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  font: 700 13px/1 var(--fw-font-sans);
+}
+
+.pm-bub i {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font: 600 11px/14px var(--fw-font-sans);
+  color: #0a0a0a;
+  text-shadow:
+    0 1px 2px #fff,
+    0 0 4px #fff,
+    0 0 8px #fff;
+  font-style: normal;
+}
+
+.pm-bub:hover b {
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+.pm-zone {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+
+.pm-zone svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pm-gauge {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+
+.pm-gauge svg {
+  width: 13px;
+  height: 13px;
+}
+
+.pm-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid rgb(229, 229, 229);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  color: rgb(10, 10, 10);
+  font: 500 16px/1 var(--fw-font-sans);
+  padding: 0;
+}
+
+.pm-btn:hover {
+  background: rgb(245, 245, 245);
+}
+
+/* Deliberately above the map chrome's z-index 500: the zoom buttons are
+   covered while the map loads. */
+.pm-skel {
+  position: absolute;
+  inset: 0;
+  z-index: 600;
+  background: rgb(240, 239, 237);
+}
+
+.pm-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 340px 100%;
+  background-repeat: no-repeat;
+  animation: pm-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Leaflet's own controls sit at z-index 1000, so with zoomControl off the
+   attribution lands on top of the custom buttons. Shrinking it keeps them
+   readable. */
+.pm-attr {
+  font-size: 9px !important;
+}
+
+.leaflet-container {
+  /* OSM's own land colour, so the gap before tiles arrive matches them. */
+  background: rgb(242, 239, 233);
+  font-family: var(--fw-font-sans);
+}

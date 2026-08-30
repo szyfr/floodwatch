@@ -1,0 +1,370 @@
+/* App chrome — design lines 110-196 (headers, banners) and 775-815 (drawer). */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-x` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+
+/* The frame owns the viewport; each screen scrolls inside it, exactly as the
+   prototype's device frame does. Without this the whole page scrolls and the
+   dashboard's list panel loses its own scrollbar. */
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--fw-bg-subtle);
+}
+
+/* ---------------------------------------------------------------- headers */
+
+.mobileHeader {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--fw-header-h-mobile);
+  padding: 0 12px;
+  background: var(--fw-bg);
+  border-bottom: 1px solid var(--fw-border);
+}
+
+.desktopHeader {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex: none;
+  display: none;
+  align-items: center;
+  gap: 26px;
+  height: var(--fw-header-h);
+  padding: 0 24px;
+  background: var(--fw-bg);
+  border-bottom: 1px solid var(--fw-border);
+}
+
+@media (min-width: 768px) {
+  .mobileHeader {
+    display: none;
+  }
+  .desktopHeader {
+    display: flex;
+  }
+}
+
+.iconButton {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fw-radius-lg);
+  background: transparent;
+  color: var(--fw-fg);
+  cursor: pointer;
+}
+.iconButton:hover {
+  background: var(--fw-bg-muted);
+}
+
+.bellWrap {
+  position: relative;
+}
+
+.bellBadge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: var(--fw-radius-full);
+  background: var(--fw-danger);
+  color: #fff;
+  font: 700 10px/17px var(--fw-font-sans);
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--fw-bg);
+}
+
+.titleBlock {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand {
+  font: 700 15px/18px var(--fw-font-sans);
+  color: var(--fw-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scopeButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: 500 11px/14px var(--fw-font-sans);
+  color: var(--fw-fg-tertiary);
+  text-align: left;
+}
+.scopeButton span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--fw-radius-lg);
+  background: #0f172a;
+  color: #fff;
+}
+
+.brandBlock {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brandScope {
+  font: 400 11px/14px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--fw-fg-tertiary);
+  font: 500 14px/1 var(--fw-font-ui);
+  cursor: pointer;
+}
+.navItem:hover {
+  background: var(--fw-bg-muted);
+}
+.navItemActive {
+  background: var(--fw-bg-muted);
+  color: var(--fw-fg);
+}
+
+.navBadge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--fw-radius-full);
+  background: var(--fw-danger);
+  color: #fff;
+  font: 700 10px/18px var(--fw-font-sans);
+  text-align: center;
+}
+
+.headerRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.offlineChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--fw-radius-full);
+  background: #fef3c7;
+  color: var(--fw-amber-fg);
+  font: 600 12px/1 var(--fw-font-sans);
+}
+
+.submitButton {
+  min-height: 40px;
+  gap: 8px;
+  padding: 0 16px;
+  background: var(--fw-primary);
+  color: var(--fw-primary-fg);
+  border-radius: var(--fw-radius-lg);
+  font: 500 14px/1 var(--fw-font-ui);
+}
+.submitButton:hover {
+  background: #2b2b2b;
+}
+
+.avatarButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-full);
+  background: var(--fw-bg-muted);
+  color: var(--fw-fg-tertiary);
+  font: 600 13px/1 var(--fw-font-sans);
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- banners */
+
+.alertBannerWrap {
+  flex: none;
+  padding: 10px 12px;
+  background: var(--fw-bg);
+  border-bottom: 1px solid var(--fw-border);
+}
+
+.alertBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  padding: 12px 12px 12px 13px;
+  border: 1px solid var(--fw-border);
+  border-left: 4px solid var(--fw-fg-muted);
+  border-radius: var(--fw-radius-xl);
+  background: var(--fw-bg);
+  text-align: left;
+  cursor: pointer;
+  --fw-anim: fw-slide;
+  animation: var(--fw-anim) 300ms var(--fw-ease) both;
+}
+.alertBannerCritical {
+  background: var(--fw-danger-bg);
+  border-color: var(--fw-danger-border);
+}
+
+.alertBannerIcon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.alertBannerBody {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.alertBannerHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.priorityPill {
+  height: 19px;
+  padding: 0 8px;
+  border-radius: var(--fw-radius-full);
+  color: #fff;
+  font: 700 10px/19px var(--fw-font-sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.alertBannerTitle {
+  font: 600 14px/19px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.alertBannerMessage {
+  font: 400 13px/18px var(--fw-font-sans);
+  color: var(--fw-fg-tertiary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dismissButton {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fw-radius-md);
+  background: transparent;
+  color: var(--fw-fg-muted);
+  cursor: pointer;
+}
+.dismissButton:hover {
+  background: var(--fw-bg-muted);
+}
+
+/* ---------------------------------------------------------------- content */
+
+.main {
+  flex: 1 1 0px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* ---------------------------------------------------------------- language */
+
+.langGroup {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--fw-radius-full);
+  background: var(--fw-bg-muted);
+}
+
+.langButton {
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--fw-radius-full);
+  background: transparent;
+  color: var(--fw-fg-muted);
+  font: 600 11px/1 var(--fw-font-ui);
+  cursor: pointer;
+}
+.langButtonOn {
+  background: var(--fw-bg);
+  color: var(--fw-fg);
+}
+
+.langGroupLarge .langButton {
+  height: 28px;
+  padding: 0 13px;
+  font-size: 12px;
+}
+.langGroupLarge .langButtonOn {
+  box-shadow: var(--fw-shadow-sm);
+}

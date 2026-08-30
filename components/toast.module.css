@@ -1,0 +1,83 @@
+/* The prototype's toast card (design lines 992-1005). */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-x` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  max-width: 360px;
+  padding: 14px 15px;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  border-left: 4px solid var(--fw-fg-muted);
+  border-radius: var(--fw-radius-xl);
+  box-shadow: var(--fw-shadow-md);
+  --fw-anim: fw-fade;
+  animation: var(--fw-anim) 220ms var(--fw-ease) both;
+}
+
+.ok {
+  border-left-color: var(--fw-success);
+}
+.warn {
+  border-left-color: var(--fw-warn);
+  border-color: var(--fw-warn-border);
+}
+.info {
+  border-left-color: var(--fw-accent);
+}
+
+.icon {
+  flex: none;
+  margin-top: 1px;
+}
+.ok .icon {
+  color: var(--fw-success);
+}
+.warn .icon {
+  color: var(--fw-warn);
+}
+.info .icon {
+  color: var(--fw-accent);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.title {
+  font: 600 14px/19px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.sub {
+  font: 400 13px/18px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+  text-wrap: pretty;
+}
+
+.close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--fw-radius-md);
+  background: transparent;
+  color: var(--fw-fg-faint);
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--fw-bg-muted);
+}

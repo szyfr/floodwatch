@@ -30,7 +30,15 @@ pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# user-uploaded report photos, served by app/uploads/[name]/route.ts
+/var/uploads/*
+!/var/uploads/.gitkeep
+
+# Prisma generates TypeScript source here — regenerate, do not commit
+/generated/prisma

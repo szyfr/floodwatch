@@ -1,0 +1,66 @@
+/* Photo attachment — design lines 510-518. */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-x` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+
+.file {
+  display: none;
+}
+
+.drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 150px;
+  padding: 16px;
+  background: var(--fw-bg-subtle);
+  border: 1px dashed var(--fw-border-strong);
+  border-radius: 11px;
+  cursor: pointer;
+  transition:
+    background-color 140ms var(--fw-ease),
+    border-color 140ms var(--fw-ease);
+}
+
+.dropDone {
+  background: #f0fdf4;
+  border-color: var(--fw-success);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  border-radius: 11px;
+  color: var(--fw-fg-muted);
+}
+
+.spinner {
+  --fw-anim: fw-spin;
+  animation: var(--fw-anim) 700ms linear infinite;
+}
+
+.label {
+  font: 600 14px/18px var(--fw-font-sans);
+  color: var(--fw-fg);
+  /* A real filename can be long; it must not push the box wider. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hint {
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+  text-align: center;
+}

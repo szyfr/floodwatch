@@ -1,0 +1,38 @@
+/* Offline banner — design lines 163-174. */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-x` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+.banner {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--fw-amber-bg);
+  border-bottom: 1px solid var(--fw-amber-border);
+  color: var(--fw-amber-fg);
+  --fw-anim: fw-slide;
+  animation: var(--fw-anim) 300ms var(--fw-ease) both;
+}
+
+.icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.text {
+  font: 500 13px/18px var(--fw-font-sans);
+}
+
+.queue {
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-amber-fg-soft);
+}

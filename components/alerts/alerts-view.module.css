@@ -1,0 +1,97 @@
+/* Alerts screen — design lines 537-574. */
+
+.page {
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 14px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .page {
+    max-width: var(--fw-form-max);
+    padding: 28px 24px 56px;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-lg);
+  background: var(--fw-bg);
+  color: var(--fw-fg);
+  box-shadow: var(--fw-shadow-xs);
+  transition: background-color 120ms ease;
+}
+
+.back:hover {
+  background: var(--fw-bg-muted);
+}
+
+.heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  margin: 0;
+  font: 700 22px/28px var(--fw-font-sans);
+  letter-spacing: -0.01em;
+  color: var(--fw-fg);
+}
+
+.subtitle {
+  font: 400 13px/18px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: block;
+}
+
+.empty {
+  margin: 0;
+  padding: 34px 20px;
+  background: var(--fw-bg);
+  border: 1px dashed var(--fw-border);
+  border-radius: var(--fw-radius-2xl);
+  text-align: center;
+  font: 400 14px/20px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+/* 40px is the design's size; touch wants 44px, which costs no pixels. */
+@media (max-width: 767px) {
+  .back {
+    position: relative;
+  }
+  .back::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+  }
+}

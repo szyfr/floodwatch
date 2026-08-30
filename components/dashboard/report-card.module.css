@@ -1,0 +1,160 @@
+/* Report card — design lines 374-412. */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-x` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid var(--fw-border-soft);
+  border-radius: var(--fw-radius-xl);
+  background: var(--fw-bg);
+  box-shadow: var(--fw-shadow-card);
+  /* CSS Modules rewrite a bare animation name to a local one; the `fw-*`
+     keyframes are global (styles/tokens.css), so the name is passed through
+     a custom property to keep the reference intact. */
+  --fw-anim: fw-fade;
+  animation: var(--fw-anim) 220ms var(--fw-ease) both;
+}
+.cardNew {
+  border-color: var(--fw-accent-border);
+  box-shadow: var(--fw-shadow-card-new);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.level {
+  height: 22px;
+  padding: 0 10px;
+  border-radius: var(--fw-radius-full);
+  font: 700 11px/22px var(--fw-font-sans);
+  letter-spacing: 0.02em;
+}
+
+.new {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--fw-accent-border);
+  border-radius: var(--fw-radius-full);
+  background: var(--fw-accent-bg);
+  color: var(--fw-accent-strong);
+  font: 700 10px/20px var(--fw-font-sans);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  --fw-anim: fw-pulse;
+  animation: var(--fw-anim) 2s ease-in-out infinite;
+}
+
+.verified {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--fw-success-strong);
+  font: 600 11px/1 var(--fw-font-sans);
+}
+
+.ago {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 400 11px/14px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.name {
+  font: 600 15px/20px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font: 400 13px/18px var(--fw-font-sans);
+  color: var(--fw-fg-tertiary);
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--fw-border);
+  border-radius: 9px;
+  background: var(--fw-bg);
+  color: var(--fw-fg-secondary);
+  font: 600 13px/1 var(--fw-font-ui);
+  cursor: pointer;
+}
+.vote:hover {
+  background: var(--fw-bg-subtle);
+}
+.voteUpOn,
+.voteUpOn:hover {
+  border-color: var(--fw-success-border);
+  background: var(--fw-success-bg);
+  color: var(--fw-success-strong);
+}
+.voteDownOn,
+.voteDownOn:hover {
+  border-color: var(--fw-danger-border);
+  background: var(--fw-vote-down-bg);
+  color: var(--fw-vote-down-fg);
+}
+
+.bump {
+  --fw-anim: fw-count;
+  animation: var(--fw-anim) 320ms ease;
+}
+
+.voted {
+  font: 500 11px/14px var(--fw-font-sans);
+  color: var(--fw-success-strong);
+}
+
+.details {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 36px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--fw-fg-secondary);
+  font: 500 13px/1 var(--fw-font-ui);
+  cursor: pointer;
+}
+.details:hover {
+  color: var(--fw-fg);
+}
