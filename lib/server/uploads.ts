@@ -1,11 +1,12 @@
 import "server-only"
 
 import { createReadStream } from "node:fs"
-import { mkdir, stat, writeFile } from "node:fs/promises"
+import { mkdir, rm, stat, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { Readable } from "node:stream"
 
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -91,6 +92,27 @@ export async function putUpload(
 
   await mkdir(UPLOAD_DIR, { recursive: true })
   await writeFile(join(UPLOAD_DIR, name), bytes)
+}
+
+/**
+ * Where a photo lives in S3, or null when photos are on local disk. Moderation
+ * needs the bucket and key, and only runs in S3 mode.
+ */
+export function uploadStorageRef(
+  name: string
+): { bucket: string; key: string } | null {
+  return BUCKET ? { bucket: BUCKET, key: keyFor(name) } : null
+}
+
+/** Used to take back a photo that moderation rejected after it was stored. */
+export async function deleteUpload(name: string): Promise<void> {
+  if (BUCKET) {
+    await s3().send(
+      new DeleteObjectCommand({ Bucket: BUCKET, Key: keyFor(name) })
+    )
+    return
+  }
+  await rm(join(UPLOAD_DIR, name), { force: true })
 }
 
 export async function getUpload(name: string): Promise<StoredUpload | null> {

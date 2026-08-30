@@ -1200,6 +1200,8 @@ These are all the variables the code actually reads:
 | `HOSTNAME` | `server.ts` | `127.0.0.1` — see the warning below |
 | `NEXT_PUBLIC_SOCKET_PATH` | `lib/realtime/events.ts` | `/ws`. **Inlined at build time** into the client bundle. |
 | `S3_BUCKET` | `lib/server/uploads.ts` | Optional. Unset = photos on local disk under `var/uploads`. Set it and photos go to S3 instead; the public URL stays `/uploads/<uuid>.<ext>` either way. |
+| `REKOGNITION_MODERATION` | `lib/server/moderation.ts` | Optional. `on` enables photo moderation; anything else disables it. Requires `S3_BUCKET`. Fails open by design. |
+| `REKOGNITION_ALLOW_CATEGORIES` | `lib/server/moderation.ts` | Comma-separated top-level categories to let through. Empty means block everything Rekognition flags — including `Visually Disturbing`, which covers injuries and wreckage and will reject legitimate flood photos. |
 | `AWS_REGION` | AWS SDK | Only with `S3_BUCKET`. Credentials come from the EC2 instance role via IMDS — never put AWS keys in `.env`. |
 | `NEXT_PUBLIC_STADIA_API_KEY` | `components/map/map-constants.ts` | Optional, and normally **unset** — map tiles authenticate by domain allowlist instead. Also inlined at build time, so it is public; set it only where a hostname cannot be allowlisted. |
 | `NODE_ENV` | `server.ts`, `lib/db.ts`, `lib/auth/token.ts` | `production`. Set by the `start` script / systemd unit — leave it out of `.env`. |

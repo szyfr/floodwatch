@@ -4,7 +4,14 @@ import type { NextRequest } from "next/server"
 
 import { apiError, json, requireUser } from "@/lib/api"
 import { PHOTO_MAX_BYTES } from "@/lib/domain"
-import { CONTENT_TYPES, putUpload, uploadUrl } from "@/lib/server/uploads"
+import { moderatePhoto } from "@/lib/server/moderation"
+import {
+  CONTENT_TYPES,
+  deleteUpload,
+  putUpload,
+  uploadStorageRef,
+  uploadUrl,
+} from "@/lib/server/uploads"
 
 /**
  * The only two formats the submit form offers, with the extension we write.
@@ -72,6 +79,22 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[uploads] could not store photo", error)
     return apiError("Could not store that photo", 502, { code: "STORAGE" })
+  }
+
+  // Moderation runs against the stored object, so a rejected photo has to be
+  // taken back off S3. It fails open — see lib/server/moderation.ts.
+  const ref = uploadStorageRef(name)
+  if (ref) {
+    const verdict = await moderatePhoto(ref.bucket, ref.key)
+    if (verdict.blocked) {
+      console.warn(
+        `[moderation] rejected ${name}: ${verdict.labels.join("; ")}`
+      )
+      await deleteUpload(name).catch((error) =>
+        console.error("[moderation] could not delete rejected photo", error)
+      )
+      return rejected()
+    }
   }
 
   return json({ url: uploadUrl(name) })
