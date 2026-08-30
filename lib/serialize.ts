@@ -5,8 +5,10 @@
 import {
   LEVEL_META,
   NEW_REPORT_MINUTES,
+  initialsFor,
   minutesSince,
   worstLevel,
+  type Language,
   type AlarmLevel,
   type GaugeTrend,
   type WaterLevel,
@@ -18,6 +20,8 @@ import type {
   GaugeDto,
   LguDto,
   LguSummaryDto,
+  ManagedUserDto,
+  Role,
   PublicReportDto,
   ReportDto,
   VoteValue,
@@ -201,6 +205,44 @@ export function toGauge(row: GaugeRow): GaugeDto {
     trend: row.trend.toLowerCase() as GaugeTrend,
     deltaPerHour: row.deltaPerHour,
     observedAt: row.observedAt.toISOString(),
+  }
+}
+
+type ManagedUserRow = {
+  id: string
+  email: string
+  fullName: string
+  role: string
+  organisation: string | null
+  language: string
+  createdAt: Date
+  lgu: { slug: string; name: string }
+  _count: { reports: number }
+}
+
+/**
+ * An account row for the officials' console. `viewerId` is threaded in rather
+ * than compared on the client because "this is you" decides what the console
+ * refuses to do — an officer cannot take their own last powers away — and that
+ * judgement belongs on the same side as the endpoint that enforces it.
+ */
+export function toManagedUser(
+  row: ManagedUserRow,
+  viewerId: string | null
+): ManagedUserDto {
+  return {
+    id: row.id,
+    email: row.email,
+    fullName: row.fullName,
+    initials: initialsFor(row.fullName),
+    role: (row.role === "OFFICIAL" ? "OFFICIAL" : "RESIDENT") as Role,
+    organisation: row.organisation,
+    language: (row.language === "tl" ? "tl" : "en") as Language,
+    lguSlug: row.lgu.slug,
+    lguName: row.lgu.name,
+    reportCount: row._count.reports,
+    createdAt: row.createdAt.toISOString(),
+    isSelf: row.id === viewerId,
   }
 }
 

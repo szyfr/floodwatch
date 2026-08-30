@@ -41,11 +41,16 @@ export async function PATCH(request: NextRequest, { params }: Context) {
   const existing = await loadOwnership(id)
   if (!existing) return notFound("Report not found")
 
-  // Content is the author's to edit; verification is the DRRM office's.
+  // Content is the author's to edit and the DRRM office's to correct on any
+  // report — the office works the whole province from the report console, where
+  // a mislabelled water level or a pin in the wrong barangay is theirs to fix.
+  // Verification stays the office's alone.
+  const isOfficial = auth.user.role === "OFFICIAL"
   const editsContent = Object.values(content).some((v) => v !== undefined)
-  if (editsContent && existing.authorId !== auth.user.id) return forbidden()
-  if (verified !== undefined && auth.user.role !== "OFFICIAL")
+  if (editsContent && existing.authorId !== auth.user.id && !isOfficial) {
     return forbidden()
+  }
+  if (verified !== undefined && !isOfficial) return forbidden()
 
   const data: {
     lguId?: string
@@ -78,7 +83,7 @@ export async function PATCH(request: NextRequest, { params }: Context) {
   if (verified !== undefined) {
     data.verifiedAt = verified ? new Date() : null
     data.verifiedById = verified ? auth.user.id : null
-  } else if (editsContent && auth.user.role !== "OFFICIAL") {
+  } else if (editsContent && !isOfficial) {
     // A resident editing a verified report would otherwise keep the DRRM
     // office's badge over content the office never saw. The badge has to be
     // re-earned.

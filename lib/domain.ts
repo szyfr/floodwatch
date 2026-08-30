@@ -73,15 +73,48 @@ export const PICKER_ZOOM = 14
 /** A report is flagged "New" while it is younger than this. */
 export const NEW_REPORT_MINUTES = 10
 /** Reports older than this drop out of the default "live" feed. */
-export const DEFAULT_RECENCY_MINUTES = 60
+export const DEFAULT_RECENCY_MINUTES = 1440
 export const DESCRIPTION_MAX = 500
 export const PHOTO_MAX_BYTES = 5 * 1024 * 1024
 
-export const RECENCY_OPTIONS = ["30", "60", "all"] as const
+export const RECENCY_OPTIONS = ["30", "60", "1440", "all"] as const
 export type Recency = (typeof RECENCY_OPTIONS)[number]
+
+/** The window the dashboard opens on, in the URL only when it is not this. */
+export const DEFAULT_RECENCY: Recency = String(
+  DEFAULT_RECENCY_MINUTES
+) as Recency
 
 export const SORT_OPTIONS = ["recent", "voted"] as const
 export type SortOption = (typeof SORT_OPTIONS)[number]
+
+/**
+ * Filters on the officials' report console. They are deliberately not the
+ * resident dashboard's: an officer works a backlog rather than a live feed, so
+ * the console filters by verification state and can walk the list oldest first.
+ */
+export const REPORT_STATUSES = ["all", "verified", "unverified"] as const
+export type ReportStatus = (typeof REPORT_STATUSES)[number]
+
+export const REPORT_ORDERS = ["newest", "oldest"] as const
+export type ReportOrder = (typeof REPORT_ORDERS)[number]
+
+/** Rows a console asks for at a time; "Load more" asks for the next page. */
+export const MANAGE_PAGE_SIZE = 50
+
+/**
+ * Filters on the accounts console. Role doubles as the filter and the value an
+ * officer can set, so "all" is kept out of the settable pair rather than being
+ * a role nobody holds.
+ */
+export const USER_ROLE_FILTERS = ["all", "OFFICIAL", "RESIDENT"] as const
+export type UserRoleFilter = (typeof USER_ROLE_FILTERS)[number]
+
+export const USER_ORDERS = ["newest", "name"] as const
+export type UserOrder = (typeof USER_ORDERS)[number]
+
+/** Shortest password the app accepts, wherever one is set. */
+export const PASSWORD_MIN = 8
 
 export function levelRank(level: WaterLevel): number {
   return LEVEL_META[level].rank

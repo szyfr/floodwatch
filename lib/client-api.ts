@@ -6,17 +6,24 @@ import type {
   DashboardDto,
   GaugeDto,
   LguSummaryDto,
+  ManagedUserDto,
+  ManageReportsDto,
+  ManageUsersDto,
   ReportDto,
   SessionUserDto,
   VoteValue,
   ZoneDto,
 } from "@/lib/dto"
 import type {
+  ChangePasswordInput,
   CreateAlertInput,
   CreateReportInput,
   CreateZoneInput,
+  ResetPasswordInput,
   SignInInput,
   SignUpInput,
+  UpdateReportInput,
+  UpdateUserInput,
 } from "@/lib/validation"
 
 /**
@@ -60,10 +67,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
-const query = (params: Record<string, string | null | undefined>) => {
+const query = (params: Record<string, string | number | null | undefined>) => {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
-    if (value) search.set(key, value)
+    // 0 is a real offset, so only null/undefined/"" are dropped.
+    if (value !== null && value !== undefined && value !== "") {
+      search.set(key, String(value))
+    }
   }
   return search.size ? `?${search}` : ""
 }
@@ -104,6 +114,53 @@ export const api = {
   createReport: (input: CreateReportInput & { clientId?: string }) =>
     request<{ report: ReportDto }>("/api/reports", {
       method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  /** Officials only — every report, any age, filtered and paged. */
+  manageReports: (params: {
+    q?: string | null
+    lgu?: string | null
+    level?: string | null
+    status?: string | null
+    order?: string | null
+    skip?: number
+    limit?: number
+  }) => request<ManageReportsDto>(`/api/admin/reports${query(params)}`),
+
+  /** Officials only — every account, filtered and paged. */
+  manageUsers: (params: {
+    q?: string | null
+    lgu?: string | null
+    role?: string | null
+    order?: string | null
+    skip?: number
+    limit?: number
+  }) => request<ManageUsersDto>(`/api/admin/users${query(params)}`),
+
+  updateUser: (id: string, input: UpdateUserInput) =>
+    request<{ user: ManagedUserDto }>(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    }),
+
+  /** Officials only — sets someone else's password without knowing the old one. */
+  resetUserPassword: (id: string, input: ResetPasswordInput) =>
+    request<{ ok: true }>(`/api/admin/users/${id}/password`, {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+
+  /** Your own password, current one and all. */
+  changePassword: (input: ChangePasswordInput) =>
+    request<{ ok: true }>("/api/auth/password", {
+      method: "PUT",
+      body: JSON.stringify(input),
+    }),
+
+  updateReport: (id: string, input: UpdateReportInput) =>
+    request<{ report: ReportDto }>(`/api/reports/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(input),
     }),
 

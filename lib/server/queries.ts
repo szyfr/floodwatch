@@ -9,15 +9,23 @@ import type {
   GaugeDto,
   LguDto,
   LguSummaryDto,
+  ManageReportsDto,
+  ManageUsersDto,
   PublicReportDto,
   ReportDto,
   VoteValue,
   ZoneDto,
 } from "@/lib/dto"
 import {
+  DEFAULT_RECENCY,
   DEFAULT_RECENCY_MINUTES,
+  MANAGE_PAGE_SIZE,
   type Recency,
+  type ReportOrder,
+  type ReportStatus,
   type SortOption,
+  type UserOrder,
+  type UserRoleFilter,
   type WaterLevel,
 } from "@/lib/domain"
 import { tags } from "@/lib/server/cache"
@@ -28,6 +36,7 @@ import {
   toAlert,
   toGauge,
   toLgu,
+  toManagedUser,
   toPublicReport,
   toReport,
   toZone,
@@ -162,7 +171,7 @@ export async function getLguBySlug(slug: string): Promise<LguDto | null> {
  * straight. Shares the dashboard's cached rollup and is dropped by the same
  * report writes.
  *
- * The window is fixed at the default hour, matching what this endpoint has
+ * The window is fixed at the default one, matching what this endpoint has
  * always returned. The dashboard rolls up over whatever recency the viewer has
  * chosen instead, so on a non-default filter the two land on different entries
  * and report different counts — a pre-existing disagreement between the two
@@ -297,20 +306,19 @@ async function viewerVotes(
 async function decorateReports(
   reports: PublicReportDto[],
   viewerId: string | null,
-  sort: SortOption
+  /** null keeps the order the caller already put the rows in. */
+  sort: SortOption | null
 ): Promise<ReportDto[]> {
   const votes = await viewerVotes(
     reports.map((report) => report.id),
     viewerId
   )
-  return sortReports(
-    reports.map((report) => ({
-      ...withReportFreshness(report),
-      myVote: votes.get(report.id) ?? null,
-      isOwner: viewerId !== null && report.authorId === viewerId,
-    })),
-    sort
-  )
+  const decorated = reports.map((report) => ({
+    ...withReportFreshness(report),
+    myVote: votes.get(report.id) ?? null,
+    isOwner: viewerId !== null && report.authorId === viewerId,
+  }))
+  return sort ? sortReports(decorated, sort) : decorated
 }
 
 export async function listReports(
@@ -323,7 +331,7 @@ export async function listReports(
   const reports = await cachedPublicReports(
     scope,
     filters.level ?? null,
-    since(filters.recency ?? "60", nowBucket()),
+    since(filters.recency ?? DEFAULT_RECENCY, nowBucket()),
     filters.limit ?? 100
   )
   return decorateReports(reports, viewerId, filters.sort ?? "recent")
@@ -344,9 +352,151 @@ export async function getReport(
 ): Promise<ReportDto | null> {
   const row = await prisma.floodReport.findFirst({
     where: { id, deletedAt: null },
-    include: { ...reportInclude, votes: { select: { value: true, userId: true } } },
+    include: {
+      ...reportInclude,
+      votes: { select: { value: true, userId: true } },
+    },
   })
   return row ? toReport(row, viewerId) : null
+}
+
+export type ManageReportFilters = {
+  /** Free text over the location name and the reporter's description. */
+  q?: string | null
+  lguSlug?: string | null
+  level?: WaterLevel | null
+  status?: ReportStatus
+  order?: ReportOrder
+  skip?: number
+  limit?: number
+}
+
+/**
+ * Every report an official can act on, one page at a time.
+ *
+ * Deliberately uncached, and for two reasons rather than one. The obvious one
+ * is freshness: this is the screen an officer verifies and removes from, and it
+ * has to show the result of their own last action. The other is the key space —
+ * the console filters on free text, which perScope's memoised-wrapper-per-key
+ * approach cannot bound the way `knownScope` bounds the twenty-two areas.
+ *
+ * The resident feed's recency window is absent on purpose: the reports it has
+ * already dropped are exactly the ones an officer still has to work through.
+ */
+export async function listAllReports(
+  filters: ManageReportFilters,
+  viewerId: string | null
+): Promise<ManageReportsDto> {
+  const { ok, scope } = await knownScope(filters.lguSlug)
+  if (!ok) return { reports: [], total: 0 }
+
+  const q = filters.q?.trim()
+  const status = filters.status ?? "all"
+
+  // Soft-deleted reports stay out: removing one is how an officer takes it off
+  // the map, so it must not come straight back on the console.
+  const where = {
+    deletedAt: null,
+    ...(scope ? { lgu: { slug: scope } } : {}),
+    ...(filters.level ? { waterLevel: filters.level } : {}),
+    ...(status === "verified" ? { verifiedAt: { not: null } } : {}),
+    ...(status === "unverified" ? { verifiedAt: null } : {}),
+    ...(q
+      ? {
+          OR: [
+            { locationName: { contains: q, mode: "insensitive" as const } },
+            { description: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  }
+
+  const [rows, total] = await Promise.all([
+    prisma.floodReport.findMany({
+      where,
+      include: reportInclude,
+      orderBy: { createdAt: filters.order === "oldest" ? "asc" : "desc" },
+      skip: filters.skip ?? 0,
+      take: filters.limit ?? MANAGE_PAGE_SIZE,
+    }),
+    prisma.floodReport.count({ where }),
+  ])
+
+  return {
+    // Ordered by the database because the page is a window onto a longer list;
+    // re-sorting the window in memory would only shuffle the page.
+    reports: await decorateReports(rows.map(toPublicReport), viewerId, null),
+    total,
+  }
+}
+
+// ---------------------------------------------------------------- accounts
+
+export type ManageUserFilters = {
+  /** Free text over the full name and the email. */
+  q?: string | null
+  lguSlug?: string | null
+  role?: UserRoleFilter
+  order?: UserOrder
+  skip?: number
+  limit?: number
+}
+
+/**
+ * Every account in the province, one page at a time, for the DRRM office.
+ *
+ * Uncached for the report console's reasons and one of its own: these rows are
+ * people's names, emails and the areas they report from. A shared cache entry
+ * of that is worth avoiding even behind an OFFICIAL check, and accounts are
+ * read far less often than reports, so there is nothing to buy with it.
+ */
+export async function listUsers(
+  filters: ManageUserFilters,
+  viewerId: string | null
+): Promise<ManageUsersDto> {
+  const { ok, scope } = await knownScope(filters.lguSlug)
+  if (!ok) return { users: [], total: 0 }
+
+  const q = filters.q?.trim()
+  const role = filters.role ?? "all"
+
+  const where = {
+    ...(scope ? { lgu: { slug: scope } } : {}),
+    ...(role === "all" ? {} : { role }),
+    ...(q
+      ? {
+          OR: [
+            { fullName: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  }
+
+  const [rows, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      include: {
+        lgu: { select: { slug: true, name: true } },
+        // Filtered so a removed report stops counting against its author —
+        // the console shows what someone has standing, not what they once
+        // filed.
+        _count: { select: { reports: { where: { deletedAt: null } } } },
+      },
+      orderBy:
+        filters.order === "name"
+          ? [{ fullName: "asc" }, { createdAt: "desc" }]
+          : { createdAt: "desc" },
+      skip: filters.skip ?? 0,
+      take: filters.limit ?? MANAGE_PAGE_SIZE,
+    }),
+    prisma.user.count({ where }),
+  ])
+
+  return {
+    users: rows.map((row) => toManagedUser(row, viewerId)),
+    total,
+  }
 }
 
 // ----------------------------------------------------------- zones, gauges
@@ -476,7 +626,7 @@ export async function getDashboard(
   viewerId: string | null
 ): Promise<DashboardDto> {
   const { ok, scope } = await knownScope(filters.lguSlug)
-  const createdAfter = since(filters.recency ?? "60", nowBucket())
+  const createdAfter = since(filters.recency ?? DEFAULT_RECENCY, nowBucket())
 
   // An unknown area empties the scoped panels but leaves the province-wide
   // ones — the rollup and the evacuation total — exactly as they were.

@@ -38,7 +38,7 @@ import {
   PROVINCE_CENTER,
   type WaterLevel,
 } from "@/lib/domain"
-import type { ApiError, LguDto, ReportDto, ZoneDto } from "@/lib/dto"
+import type { LguDto, ReportDto, ZoneDto } from "@/lib/dto"
 import type { UpdateReportInput } from "@/lib/validation"
 
 /** The design shows exactly three inline errors; everything else is a toast. */
@@ -77,7 +77,6 @@ function parsePoint(lat: string, lng: string): MapPoint | null {
   return { lat: a, lng: b }
 }
 
-/** `api` covers creating a report; editing one is this screen's alone. */
 /**
  * `crypto.randomUUID` is only defined in a secure context, and a barangay
  * device may well reach a staging box over plain HTTP.
@@ -87,28 +86,6 @@ function newClientId(): string {
     return crypto.randomUUID()
   }
   return `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
-}
-
-async function patchReport(
-  id: string,
-  input: UpdateReportInput
-): Promise<ReportDto> {
-  const response = await fetch(`/api/reports/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  })
-  if (!response.ok) {
-    let body: ApiError = { error: "Request failed" }
-    try {
-      body = (await response.json()) as ApiError
-    } catch {
-      /* a proxy or a crash can answer with something that is not JSON */
-    }
-    throw new ApiRequestError(response.status, body)
-  }
-  const data = (await response.json()) as { report: ReportDto }
-  return data.report
 }
 
 function ErrorLine({ text, shake }: { text: string; shake: string }) {
@@ -313,7 +290,7 @@ export function SubmitForm({
           point,
         })
         if (Object.keys(changes).length > 0)
-          await patchReport(report.id, changes)
+          await api.updateReport(report.id, changes)
         destination = `/dashboard?lgu=${report.lguSlug}&report=${report.id}`
       } else {
         const created = await api.createReport({

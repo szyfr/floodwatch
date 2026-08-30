@@ -43,6 +43,7 @@ export function ReportFilters({
   const recencyLabels: Record<Recency, string> = {
     "30": t.recency["30"],
     "60": t.recency["60"],
+    "1440": t.recency["1440"],
     all: t.recency.all,
   }
   const sortLabels: Record<SortOption, string> = {

@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { CriticalAlertGate } from "@/components/alerts/critical-alert-gate"
+import { ChangePasswordDialog } from "@/components/auth/change-password-dialog"
 import styles from "@/components/shell/app-shell.module.css"
 import { AreaSheet } from "@/components/shell/area-sheet"
 import { LanguageToggle } from "@/components/shell/language-toggle"
@@ -38,6 +39,8 @@ function sectionOf(pathname: string): string {
   if (pathname.startsWith("/submit")) return "submit"
   if (pathname.startsWith("/alerts")) return "alerts"
   if (pathname.startsWith("/admin")) return "admin"
+  if (pathname.startsWith("/reports")) return "reports"
+  if (pathname.startsWith("/users")) return "users"
   return "dashboard"
 }
 
@@ -69,6 +72,7 @@ export function AppShell({
   )
   const [bannerDismissed, setBannerDismissed] = React.useState(false)
   const [drawerOpen, setDrawerOpen] = React.useState(false)
+  const [passwordOpen, setPasswordOpen] = React.useState(false)
   const [areaOpen, setAreaOpen] = React.useState(false)
   const [areaRows, setAreaRows] = React.useState<LguSummaryDto[]>(() =>
     lgus.map((lgu) => ({
@@ -133,8 +137,14 @@ export function AppShell({
       label: t.nav.alerts,
       badge: unread || undefined,
     },
+    // The operations screens are the DRRM office's alone; a resident never
+    // sees them offered.
     ...(user?.role === "OFFICIAL"
-      ? [{ key: "admin", href: withScope("/admin"), label: t.nav.panel }]
+      ? [
+          { key: "reports", href: withScope("/reports"), label: t.nav.reports },
+          { key: "users", href: withScope("/users"), label: t.nav.users },
+          { key: "admin", href: withScope("/admin"), label: t.nav.panel },
+        ]
       : []),
   ]
   const desktopNav = navItems.filter((item) => item.key !== "submit")
@@ -314,6 +324,10 @@ export function AppShell({
       <NavDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        onChangePassword={() => {
+          setDrawerOpen(false)
+          setPasswordOpen(true)
+        }}
         user={user}
         items={navItems}
         currentKey={section}
@@ -326,6 +340,10 @@ export function AppShell({
         selectedSlug={scopeSlug}
         onSelect={selectArea}
       />
+
+      {passwordOpen ? (
+        <ChangePasswordDialog onClose={() => setPasswordOpen(false)} />
+      ) : null}
 
       {/* An evacuation order has to interrupt whatever screen you are on. */}
       <CriticalAlertGate alerts={live} />

@@ -25,8 +25,10 @@ import {
 } from "@/components/providers/socket-provider"
 import { AreaSheet } from "@/components/shell/area-sheet"
 import { showToast } from "@/components/toast"
+import { useClock } from "@/hooks/use-clock"
 import { api } from "@/lib/client-api"
 import {
+  DEFAULT_RECENCY,
   LGU_ZOOM,
   PROVINCE_CENTER,
   PROVINCE_ZOOM,
@@ -46,32 +48,6 @@ import type {
 import { sortReports, summariseEvacuation } from "@/lib/serialize"
 
 const SKELETONS = [1, 2, 3, 4]
-
-/**
- * One 30-second clock for every relative time on the page. Reading it through
- * a store rather than `Date.now()` during render keeps the hydrated markup
- * identical to the server's, and ages every card in the same beat.
- */
-const clockListeners = new Set<() => void>()
-let clockNow = Date.now()
-let clockTimer: ReturnType<typeof setInterval> | null = null
-
-function subscribeClock(onStoreChange: () => void): () => void {
-  clockNow = Date.now()
-  clockListeners.add(onStoreChange)
-  clockTimer ??= setInterval(() => {
-    clockNow = Date.now()
-    for (const listener of clockListeners) listener()
-  }, 30_000)
-
-  return () => {
-    clockListeners.delete(onStoreChange)
-    if (clockListeners.size === 0 && clockTimer !== null) {
-      clearInterval(clockTimer)
-      clockTimer = null
-    }
-  }
-}
 
 type UrlPatch = Partial<{
   lgu: string | null
@@ -120,11 +96,7 @@ export function DashboardView({
   }>({ level, recency, sort })
   // The server's own clock answers for the first render; the reader's takes
   // over as soon as the page is hydrated.
-  const now = React.useSyncExternalStore(
-    subscribeClock,
-    () => clockNow,
-    () => Date.parse(data.generatedAt)
-  )
+  const now = useClock(Date.parse(data.generatedAt))
 
   // Fresh server data replaces everything the socket merged into the old page.
   if (snapshot !== data) {
@@ -303,7 +275,7 @@ export function DashboardView({
       const params = new URLSearchParams()
       if (next.lgu) params.set("lgu", next.lgu)
       if (next.level) params.set("level", next.level)
-      if (next.recency !== "60") params.set("recency", next.recency)
+      if (next.recency !== DEFAULT_RECENCY) params.set("recency", next.recency)
       if (next.sort !== "recent") params.set("sort", next.sort)
       if (next.report) params.set("report", next.report)
       return `/dashboard${params.size ? `?${params}` : ""}`

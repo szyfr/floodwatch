@@ -4,6 +4,7 @@ import { DashboardView } from "@/components/dashboard/dashboard-view"
 import { getSessionUser } from "@/lib/auth/session"
 import { en } from "@/lib/i18n/dictionary"
 import {
+  DEFAULT_RECENCY,
   RECENCY_OPTIONS,
   SORT_OPTIONS,
   WATER_LEVELS,
@@ -37,7 +38,7 @@ export default async function DashboardPage({
   const level = WATER_LEVELS.find((option) => option === levelParam) ?? null
   const recencyParam = first(params.recency)
   const recency: Recency =
-    RECENCY_OPTIONS.find((option) => option === recencyParam) ?? "60"
+    RECENCY_OPTIONS.find((option) => option === recencyParam) ?? DEFAULT_RECENCY
   const sortParam = first(params.sort)
   const sort: SortOption =
     SORT_OPTIONS.find((option) => option === sortParam) ?? "recent"

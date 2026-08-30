@@ -4,11 +4,14 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
   BellIcon,
+  ClipboardTextIcon,
   GearIcon,
   GlobeIcon,
+  KeyIcon,
   PlusIcon,
   SignOutIcon,
   StackIcon,
+  UsersIcon,
   XIcon,
 } from "@phosphor-icons/react"
 
@@ -27,12 +30,15 @@ export type DrawerItem = {
 export function NavDrawer({
   open,
   onClose,
+  onChangePassword,
   user,
   items,
   currentKey,
 }: {
   open: boolean
   onClose: () => void
+  /** The drawer closes and the shell opens the dialog, which outlives it. */
+  onChangePassword: () => void
   user: SessionUserDto | null
   items: DrawerItem[]
   currentKey: string
@@ -57,6 +63,8 @@ export function NavDrawer({
     dashboard: <StackIcon size={20} />,
     submit: <PlusIcon size={20} />,
     alerts: <BellIcon size={20} />,
+    reports: <ClipboardTextIcon size={20} />,
+    users: <UsersIcon size={20} />,
     admin: <GearIcon size={20} />,
   }
 
@@ -127,14 +135,26 @@ export function NavDrawer({
 
         <div className={styles.footer}>
           {user ? (
-            <button
-              type="button"
-              className={styles.footerButton}
-              onClick={signOut}
-            >
-              <SignOutIcon size={20} />
-              {t.nav.signout}
-            </button>
+            <>
+              {/* Every account can change its own password, resident or
+                  official — the console's reset is for somebody else's. */}
+              <button
+                type="button"
+                className={styles.footerButton}
+                onClick={onChangePassword}
+              >
+                <KeyIcon size={20} />
+                {t.nav.password}
+              </button>
+              <button
+                type="button"
+                className={styles.footerButton}
+                onClick={signOut}
+              >
+                <SignOutIcon size={20} />
+                {t.nav.signout}
+              </button>
+            </>
           ) : (
             <button
               type="button"

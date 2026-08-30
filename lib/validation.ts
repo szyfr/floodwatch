@@ -6,8 +6,15 @@ import {
   ALERT_PRIORITIES,
   ALERT_TYPES,
   DESCRIPTION_MAX,
+  MANAGE_PAGE_SIZE,
+  PASSWORD_MIN,
+  DEFAULT_RECENCY,
   RECENCY_OPTIONS,
+  REPORT_ORDERS,
+  REPORT_STATUSES,
   SORT_OPTIONS,
+  USER_ORDERS,
+  USER_ROLE_FILTERS,
   WATER_LEVELS,
   ZONE_TYPES,
 } from "@/lib/domain"
@@ -36,11 +43,13 @@ const photoUrlField = z
   .regex(/^\/(?!\/)[\w./-]*$/, "photo")
   .refine((v) => !v.includes(".."), { message: "photo" })
 
+const newPassword = z.string().min(PASSWORD_MIN, "errPass").max(200)
+
 export const signUpSchema = z
   .object({
     fullName: z.string().trim().min(2, "errName").max(120),
     email: emailField,
-    password: z.string().min(8, "errPass").max(200),
+    password: newPassword,
     confirmPassword: z.string(),
     lguSlug: slug,
   })
@@ -94,10 +103,93 @@ export const voteSchema = z.object({
 export const reportQuerySchema = z.object({
   lgu: slug.optional(),
   level: z.enum(WATER_LEVELS).optional(),
-  recency: z.enum(RECENCY_OPTIONS).default("60"),
+  recency: z.enum(RECENCY_OPTIONS).default(DEFAULT_RECENCY),
   sort: z.enum(SORT_OPTIONS).default("recent"),
   limit: z.coerce.number().int().min(1).max(200).default(100),
 })
+
+/**
+ * The officials' report console. No recency bound — the console's whole point
+ * is the reports the resident dashboard's recency window has already dropped —
+ * and an offset instead, because the list is walked a page at a time rather
+ * than topped up live.
+ */
+export const manageReportQuerySchema = z.object({
+  /** Free text over the location name and the reporter's description. */
+  q: z.string().trim().max(120).optional(),
+  lgu: slug.optional(),
+  level: z.enum(WATER_LEVELS).optional(),
+  status: z.enum(REPORT_STATUSES).default("all"),
+  order: z.enum(REPORT_ORDERS).default("newest"),
+  skip: z.coerce.number().int().min(0).max(10_000).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(MANAGE_PAGE_SIZE),
+})
+
+/**
+ * The accounts console. Shaped like the report console's query — free text,
+ * area, a page at a time — because it is the same officer doing the same kind
+ * of work: finding one row in a province's worth of them.
+ */
+export const manageUserQuerySchema = z.object({
+  /** Free text over the name and the email. */
+  q: z.string().trim().max(120).optional(),
+  lgu: slug.optional(),
+  role: z.enum(USER_ROLE_FILTERS).default("all"),
+  order: z.enum(USER_ORDERS).default("newest"),
+  skip: z.coerce.number().int().min(0).max(10_000).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(MANAGE_PAGE_SIZE),
+})
+
+/**
+ * What an officer may change about someone else's account.
+ *
+ * The email is not on the list. It is the identity the account signs in with,
+ * so changing it hands the account to a different person — a transfer, not a
+ * correction, and not something to do from a row in a list.
+ */
+export const updateUserSchema = z
+  .object({
+    fullName: z.string().trim().min(2, "errName").max(120).optional(),
+    role: z.enum(["RESIDENT", "OFFICIAL"]).optional(),
+    lguSlug: slug.optional(),
+    organisation: z.string().trim().max(160).nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" })
+
+/**
+ * An officer setting someone else's password — the "ask the app admin to reset
+ * it for you" the sign-in screen promises. No current password is asked for
+ * because the officer does not have it; the authority is the OFFICIAL role,
+ * checked at the endpoint.
+ */
+export const resetPasswordSchema = z
+  .object({
+    password: newPassword,
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    message: "errConfirm",
+    path: ["confirmPassword"],
+  })
+
+/**
+ * Changing your own password. The current one is required and verified: a
+ * borrowed phone left signed in must not be enough to take the account over.
+ */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "errPass"),
+    password: newPassword,
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    message: "errConfirm",
+    path: ["confirmPassword"],
+  })
+  .refine((v) => v.password !== v.currentPassword, {
+    message: "errSamePass",
+    path: ["password"],
+  })
 
 export const createAlertSchema = z
   .object({
@@ -163,6 +255,11 @@ export type UpdateReportInput = z.infer<typeof updateReportSchema>
 export type CreateAlertInput = z.infer<typeof createAlertSchema>
 export type CreateZoneInput = z.infer<typeof createZoneSchema>
 export type ReportQuery = z.infer<typeof reportQuerySchema>
+export type ManageReportQuery = z.infer<typeof manageReportQuerySchema>
+export type ManageUserQuery = z.infer<typeof manageUserQuerySchema>
+export type UpdateUserInput = z.infer<typeof updateUserSchema>
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
 
 /** Flattens a ZodError into the `{ field: messageKey }` the forms expect. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {

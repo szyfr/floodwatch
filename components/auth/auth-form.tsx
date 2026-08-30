@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select"
 import { ApiRequestError, api } from "@/lib/client-api"
 import type { LguDto } from "@/lib/dto"
-import type { Dictionary } from "@/lib/i18n/dictionary"
+import { authMessage } from "@/lib/i18n/dictionary"
 import { fieldErrors, signInSchema, signUpSchema } from "@/lib/validation"
 
 export type AuthMode = "signin" | "signup"
@@ -35,16 +35,6 @@ function safePath(value: string | null): string | null {
   if (!value || !value.startsWith("/")) return null
   if (value.startsWith("//") || value.startsWith("/\\")) return null
   return value
-}
-
-/**
- * Both the zod schemas and the route handlers report a field failure as a
- * dictionary key under `t.auth`; anything else is a shape we have no copy for.
- */
-function messageFor(t: Dictionary, key: string | undefined): string | null {
-  if (!key) return null
-  const copy: Record<string, string | undefined> = t.auth
-  return copy[key] ?? t.err.generic
 }
 
 function ErrorLine({
@@ -161,11 +151,11 @@ export function AuthForm({
     await send(() => api.signIn(parsed.data))
   }
 
-  const nameError = messageFor(t, errors.fullName)
-  const emailError = messageFor(t, errors.email)
-  const passwordError = messageFor(t, errors.password)
-  const confirmError = messageFor(t, errors.confirmPassword)
-  const lguError = messageFor(t, errors.lguSlug)
+  const nameError = authMessage(t, errors.fullName)
+  const emailError = authMessage(t, errors.email)
+  const passwordError = authMessage(t, errors.password)
+  const confirmError = authMessage(t, errors.confirmPassword)
+  const lguError = authMessage(t, errors.lguSlug)
 
   return (
     <div className={styles.column}>

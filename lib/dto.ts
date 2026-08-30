@@ -64,6 +64,16 @@ export type ReportDto = PublicReportDto & {
   isOwner: boolean
 }
 
+/**
+ * One page of the officials' report console. `total` counts every report the
+ * filters match, not just the rows in this page, so the header can say how much
+ * backlog is left behind the "Load more".
+ */
+export type ManageReportsDto = {
+  reports: ReportDto[]
+  total: number
+}
+
 export type AlertDto = {
   id: string
   title: string
@@ -114,6 +124,35 @@ export type EvacuationSummaryDto = {
   capacity: number
   occupancy: number
   percent: number
+}
+
+/**
+ * An account as the officials' console sees it. A superset of SessionUserDto
+ * rather than a reuse of it: the console needs the row's own history — when it
+ * was opened, how much the person has filed — which the viewer's own session
+ * has no business carrying.
+ */
+export type ManagedUserDto = {
+  id: string
+  email: string
+  fullName: string
+  initials: string
+  role: Role
+  organisation: string | null
+  language: Language
+  lguSlug: string
+  lguName: string
+  /** Reports still standing — a removed one is not held against its author. */
+  reportCount: number
+  createdAt: string
+  /** The viewer's own account, which the console guards differently. */
+  isSelf: boolean
+}
+
+/** One page of the accounts console; `total` counts every match, not the page. */
+export type ManageUsersDto = {
+  users: ManagedUserDto[]
+  total: number
 }
 
 export type SessionUserDto = {
