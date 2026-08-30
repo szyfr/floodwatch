@@ -60,7 +60,7 @@ export function ReportFilters({
           {t.dash.updated}
         </span>
         <span className={styles.count}>
-          {loading ? "—" : `${count} ${t.dash.reports}`}
+          {loading ? "-" : `${count} ${t.dash.reports}`}
         </span>
       </div>
 

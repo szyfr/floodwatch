@@ -5,7 +5,7 @@ import { useLanguage } from "@/components/providers/language-provider"
 import { LEVEL_META, WATER_LEVELS, type WaterLevel } from "@/lib/domain"
 
 /**
- * "How deep is the water?" — the four water levels as a 2x2 grid of pressed
+ * "How deep is the water?" - the four water levels as a 2x2 grid of pressed
  * toggles. The chosen tile is outlined in its own level colour, which is the
  * same colour the report's pin will carry on the map.
  */

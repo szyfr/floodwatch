@@ -1,4 +1,4 @@
-/* Offline banner — design lines 163-174. */
+/* Offline banner - design lines 163-174. */
 
 /* CSS Modules rewrite every animation name they see, so a bare
    `animation: fw-x` would point at a local keyframe that does not exist.

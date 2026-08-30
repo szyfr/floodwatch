@@ -75,7 +75,7 @@ export async function requireUser(): Promise<
   return { user }
 }
 
-/** Official accounts only — broadcasts, safe zones, verification. */
+/** Official accounts only - broadcasts, safe zones, verification. */
 export async function requireOfficial(): Promise<
   | { user: SessionUserDto; response?: never }
   | { user?: never; response: NextResponse<ApiError> }

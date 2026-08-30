@@ -173,7 +173,7 @@ export function DashboardView({
     []
   )
 
-  /** A removal cannot be derived incrementally — ask the server for the truth. */
+  /** A removal cannot be derived incrementally - ask the server for the truth. */
   const refreshAreas = React.useCallback(() => {
     void api
       .lgus()

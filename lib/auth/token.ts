@@ -1,5 +1,5 @@
 /**
- * Session tokens. A short JWT in an httpOnly cookie — no session table, so the
+ * Session tokens. A short JWT in an httpOnly cookie - no session table, so the
  * socket handshake can verify the same cookie without a database round-trip.
  */
 import { SignJWT, jwtVerify } from "jose"
@@ -18,7 +18,7 @@ export type SessionClaims = {
 function secret(): Uint8Array {
   const value = process.env.AUTH_SECRET
   if (!value) {
-    throw new Error("AUTH_SECRET is not set — copy .env.example to .env")
+    throw new Error("AUTH_SECRET is not set - copy .env.example to .env")
   }
   return new TextEncoder().encode(value)
 }

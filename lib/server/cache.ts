@@ -8,7 +8,7 @@ import { revalidateTag } from "next/cache"
  * Two levels per entity. A province-wide entry carries only the broad tag; an
  * entry scoped to one city or municipality carries only that area's tag. A
  * write in San Fernando therefore drops the province-wide entries and San
- * Fernando's, and leaves the other twenty-one areas' entries standing — which
+ * Fernando's, and leaves the other twenty-one areas' entries standing - which
  * matters most during a flood, when one hard-hit area would otherwise keep
  * invalidating the whole province's cache.
  *
@@ -23,7 +23,7 @@ export const tags = {
   /**
    * The province-wide per-area rollup behind the map bubbles and the area
    * sheet. Separate from `reports` because it aggregates only lguId, waterLevel
-   * and createdAt — a vote cannot move it, and votes are the most frequent
+   * and createdAt - a vote cannot move it, and votes are the most frequent
    * write there is during a flood.
    */
   reportsRollup: "reports:rollup",
@@ -45,8 +45,8 @@ export const tags = {
  * The helpers below are called from the write sites, next to the broadcast()
  * that tells connected clients. The two are complementary and neither replaces
  * the other: realtime patches the browsers that already have the page open,
- * while these drop the server caches so the next render — and anyone arriving
- * fresh, or reconnecting after being offline — sees the write too.
+ * while these drop the server caches so the next render - and anyone arriving
+ * fresh, or reconnecting after being offline - sees the write too.
  *
  * revalidateTag rather than updateTag: updateTag throws anywhere outside a
  * Server Action, and every write site here is a route handler.
@@ -55,8 +55,8 @@ export const tags = {
 /**
  * Expire the tag now instead of allowing a stale-while-revalidate window.
  *
- * revalidateTag's second argument became required in Next 16 — calling it with
- * one argument still works but warns — and the profile it names decides how
+ * revalidateTag's second argument became required in Next 16 - calling it with
+ * one argument still works but warns - and the profile it names decides how
  * long an already-invalidated entry may go on being served while it refreshes
  * behind the scenes. The deprecation notice suggests "max", which is the
  * longest such window. This app broadcasts evacuation orders, so it asks for no
@@ -64,7 +64,7 @@ export const tags = {
  */
 const IMMEDIATE = { expire: 0 } as const
 
-/** Slugs an edit touched — a report that moved area belongs to both. */
+/** Slugs an edit touched - a report that moved area belongs to both. */
 function areaTags(
   slugs: (string | null | undefined)[],
   tag: (slug: string) => string

@@ -1,7 +1,7 @@
 /**
  * The bridge between the custom server (loaded by tsx) and the route handlers
  * (loaded from the Next bundle). They are two module graphs inside one process,
- * so the instance has to travel through globalThis — a shared import would hand
+ * so the instance has to travel through globalThis - a shared import would hand
  * each side its own copy.
  */
 import type { Server as SocketIOServer } from "socket.io"

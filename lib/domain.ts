@@ -130,7 +130,7 @@ export function worstLevel(
   return levelRank(a) >= levelRank(b) ? a : b
 }
 
-/** "1,234" — the prototype's fmtN. */
+/** "1,234" - the prototype's fmtN. */
 export function formatCount(n: number): string {
   return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 }
@@ -140,7 +140,7 @@ export function minutesSince(date: Date | string | number): number {
   return Math.max(0, Math.round((Date.now() - then) / 60000))
 }
 
-/** "4 min ago" / "4 min ang nakalipas" — the prototype's ago(). */
+/** "4 min ago" / "4 min ang nakalipas" - the prototype's ago(). */
 export function formatAgo(minutes: number, lang: Language): string {
   if (lang === "en") {
     return minutes < 60

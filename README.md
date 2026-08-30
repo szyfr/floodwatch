@@ -2,7 +2,7 @@
 
 Live flood reporting for the 22 cities and municipalities of Pampanga: citizen
 reports on a map, PAGASA-style river gauges, safe zones, and DRRM broadcast
-alerts — all updating in real time, in English and Tagalog.
+alerts - all updating in real time, in English and Tagalog.
 
 Built from the design handoff in `docs/ui-mockups-pending-scope/`.
 
@@ -31,7 +31,7 @@ bun run db:deploy         # or `bun run db:migrate` to author new migrations
 bun run db:seed           # 22 cities and municipalities + the one account
 bun run db:seed:demo      # optional: sample reports, gauges, alerts, safe zones
 
-# 4. Run — this is a custom server, so `next dev` alone will NOT start realtime
+# 4. Run - this is a custom server, so `next dev` alone will NOT start realtime
 bun run dev               # http://localhost:3000
 ```
 
@@ -39,7 +39,7 @@ bun run dev               # http://localhost:3000
 
 ### Seeded account
 
-One account, and it is an official — so it can broadcast alerts and manage safe
+One account, and it is an official - so it can broadcast alerts and manage safe
 zones from the provincial panel.
 
 | Email                | Role                                                    | Password                                      |
@@ -53,20 +53,20 @@ SEED_ADMIN_PASSWORD='…' bun run db:seed   # anywhere that is not a dev machine
 ### Demo content
 
 `bun run db:seed` writes the cities and that account and nothing else, so a
-freshly seeded database has no reports, gauges, alerts or safe zones in it —
+freshly seeded database has no reports, gauges, alerts or safe zones in it -
 which is what any shared environment wants. `prisma migrate reset` (`bun run
 db:reset`) runs that same baseline seed.
 
 `bun run db:seed:demo` lays the design bundle's sample content on top for local
 testing: 4 river gauges with six hours of readings, 7 safe zones, 18 flood
-reports and 4 broadcast alerts. Those reports are unattributed — they carry no
+reports and 4 broadcast alerts. Those reports are unattributed - they carry no
 author and render as "Anonymous", a state the design already covers. Sign up
 through the app to exercise the resident path and the owner-only Edit/Delete on
 a report.
 
 The demo seed writes report and alert timestamps relative to when it runs, so
 the "last hour" filters have something in them. Re-run `bun run db:seed:demo` to
-refresh them — it replaces reports, alerts and zones wholesale, including any
+refresh them - it replaces reports, alerts and zones wholesale, including any
 you filed through the app, and leaves accounts alone.
 
 ## Layout
@@ -79,7 +79,7 @@ app/
     alerts/         DRRM broadcasts
     admin/          provincial panel (officials only)
   (auth)/           sign in / sign up, outside the shell
-  api/              route handlers — see the table below
+  api/              route handlers - see the table below
 components/
   shell/            headers, banners, drawer, area picker
   map/              the Leaflet map ported from the prototype
@@ -87,7 +87,7 @@ components/
   providers/        language, session, socket
   ui/               shadcn/ui primitives
 lib/
-  domain.ts         water levels, colours, formatters — shared by client and server
+  domain.ts         water levels, colours, formatters - shared by client and server
   dto.ts            wire shapes
   validation.ts     zod schemas for every mutating endpoint
   serialize.ts      Prisma row → DTO
@@ -117,7 +117,7 @@ server.ts           Next + Socket.io on one port
 | `GET /api/routes`                                            | –                             | evacuation routes (phase 2; returns an empty list) |
 
 Validation failures answer 422 with `fields` keyed by field name, whose values
-are dictionary keys — so a form renders the design's own error copy.
+are dictionary keys - so a form renders the design's own error copy.
 
 ## The map
 
@@ -125,7 +125,7 @@ One basemap at every zoom: Stadia Maps' OSM Bright, capped at z20.
 
 The design mocked this up on Esri's Light Gray Canvas. That service publishes
 no imagery above z16 anywhere in the world and answers deeper requests with a
-"Map data not yet available" placeholder — and the zooms past 16 are exactly
+"Map data not yet available" placeholder - and the zooms past 16 are exactly
 where a reporter places a pin. OSM Bright draws the rivers, buildings, street
 names and corner-store landmarks people navigate by, all the way to z20.
 
@@ -137,7 +137,7 @@ their street by its name, so legibility won over the mockup.
 
 **Development needs no setup**: Stadia exempts `localhost` and `127.0.0.1`
 under tight rate limits. **Production needs the site's hostname added** under
-Properties in the Stadia dashboard — authentication is by domain allowlist, so
+Properties in the Stadia dashboard - authentication is by domain allowlist, so
 the browser's `Origin`/`Referer` is the credential and there is no key to ship
 in the bundle. An un-allowlisted hostname answers every tile with 401 and draws
 a blank map, and so does a `Referrer-Policy: no-referrer` header anywhere in
@@ -145,8 +145,8 @@ the stack. There is no API-key fallback by design: Stadia passes its key as a
 query parameter, which on a public site means publishing it to every visitor.
 
 Tile URLs are addressed `{z}/{x}/{y}`, plus Leaflet's `{r}` retina placeholder.
-If you switch providers, note the axis order — OSM, CARTO and Stadia use
-`{z}/{x}/{y}`, Esri's ArcGIS services use `{z}/{y}/{x}` — and leave Leaflet's
+If you switch providers, note the axis order - OSM, CARTO and Stadia use
+`{z}/{x}/{y}`, Esri's ArcGIS services use `{z}/{y}/{x}` - and leave Leaflet's
 `detectRetina` off: `{r}` already covers high-DPI screens, while `detectRetina`
 would request tiles a zoom deeper and quadruple the count.
 
@@ -155,13 +155,13 @@ would request tiles a zoom deeper and quadruple the count.
 `server.ts` boots Next and attaches Socket.io to the same HTTP server on `/ws`.
 Route handlers reach the io instance through `globalThis` (`lib/realtime/registry.ts`);
 a shared import would not work, because the custom server runs through `tsx`
-while route handlers come out of the Next bundle — two module graphs in one
+while route handlers come out of the Next bundle - two module graphs in one
 process.
 
 Every socket joins a `province` room, plus an `lgu:<slug>` room when the viewer
 narrows scope. Writes broadcast `report:created|updated|deleted|voted`,
 `alert:created`, `zone:created|updated|deleted` and `gauge:updated`. Payloads
-never carry viewer-specific fields (`myVote`, `isOwner`, `dismissed`) — clients
+never carry viewer-specific fields (`myVote`, `isOwner`, `dismissed`) - clients
 reconcile those against their own session.
 
 Do not add a route under `/ws`: engine.io claims that path by prefix, and a
@@ -180,7 +180,7 @@ retry cannot file the same report twice.
   Tailwind v4 without a `@reference`, so the codebase does not use it.
 - Server Components by default; `"use client"` only where state or effects are
   genuinely needed.
-- `react-hooks/set-state-in-effect` is an error here — subscribe to external
+- `react-hooks/set-state-in-effect` is an error here - subscribe to external
   state with `useSyncExternalStore` (see `hooks/use-online.ts`).
 - Every user-visible string comes from `lib/i18n/dictionary.ts`, which carries
   the design's English and Tagalog copy verbatim.

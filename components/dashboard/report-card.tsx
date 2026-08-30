@@ -20,7 +20,7 @@ import {
 import type { ReportDto, VoteValue } from "@/lib/dto"
 
 /**
- * Plays the design's 320ms count pop whenever a tally changes — but not on the
+ * Plays the design's 320ms count pop whenever a tally changes - but not on the
  * first paint, which would set every card animating at once.
  */
 export function useCountBump(value: number): {

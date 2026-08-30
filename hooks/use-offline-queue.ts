@@ -50,7 +50,7 @@ export function useOfflineQueue(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(item),
         })
-        // 409 means the server already has it — count it as delivered.
+        // 409 means the server already has it - count it as delivered.
         if (response.ok || response.status === 409) sent += 1
         else if (response.status >= 500) remaining.push(item)
         // Any other 4xx will never be accepted; drop it rather than retry forever.

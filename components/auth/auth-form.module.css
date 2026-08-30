@@ -9,7 +9,7 @@
   background: var(--fw-bg-subtle);
 }
 
-/* Sign in / sign up — design lines 713-772. One surface, two screens: only the
+/* Sign in / sign up - design lines 713-772. One surface, two screens: only the
    card's fields differ, so both routes render this stylesheet. */
 
 .page {

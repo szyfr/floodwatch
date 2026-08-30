@@ -4,8 +4,8 @@ import { prisma } from "@/lib/db"
 type Context = { params: Promise<{ id: string }> }
 
 /**
- * Dismissing is personal — one resident clearing a banner must not clear it for
- * the province — so nothing is broadcast and the row is keyed (alert, user).
+ * Dismissing is personal - one resident clearing a banner must not clear it for
+ * the province - so nothing is broadcast and the row is keyed (alert, user).
  */
 export async function POST(_request: Request, { params }: Context) {
   const auth = await requireUser()

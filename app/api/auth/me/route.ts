@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db"
 import type { ApiError, SessionUserDto } from "@/lib/dto"
 import { languageSchema } from "@/lib/validation"
 
-/** Always 200 — the client calls this on boot to rehydrate, signed in or not. */
+/** Always 200 - the client calls this on boot to rehydrate, signed in or not. */
 export async function GET(): Promise<
   NextResponse<{ user: SessionUserDto | null }>
 > {

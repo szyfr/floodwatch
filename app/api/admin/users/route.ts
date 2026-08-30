@@ -10,7 +10,7 @@ import { manageUserQuerySchema } from "@/lib/validation"
  * Under /api/admin rather than /api/auth: nothing here is about the caller's
  * own session, and the OFFICIAL check is what makes reading a province's worth
  * of names and email addresses acceptable at all. The self-service half of the
- * feature — changing your own password — lives at /api/auth/password, where
+ * feature - changing your own password - lives at /api/auth/password, where
  * every signed-in resident can reach it.
  */
 export async function GET(request: NextRequest) {

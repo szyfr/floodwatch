@@ -67,7 +67,7 @@ type Filters = {
   order: ReportOrder
 }
 
-/** Sentinel for the "all areas" / "all levels" rows — Select wants a string. */
+/** Sentinel for the "all areas" / "all levels" rows - Select wants a string. */
 const ANY = "*"
 
 /** Keystrokes settle before the console asks the server again. */
@@ -82,7 +82,7 @@ function minutesAgo(now: number, iso: string): number {
  *
  * Used for the live socket patches only. The server is the authority for what
  * a page contains; this decides whether a report that changed under the
- * officer's eyes — verified by a colleague, moved to another area — should stay
+ * officer's eyes - verified by a colleague, moved to another area - should stay
  * in the list they are looking at, rather than sitting there contradicting the
  * filter that is switched on.
  */
@@ -124,7 +124,7 @@ export function ManageReportsView({
     order: "newest",
   })
   // The rows and the count they are a window onto are one piece of state, not
-  // two. Every local change moves both — a row that stops matching the filters
+  // two. Every local change moves both - a row that stops matching the filters
   // has to leave the total as well as the list, or the console ends up claiming
   // "Showing 0 of 1" over an empty list with a Load more button under it.
   const [page, setPage] = React.useState<ManageReportsDto>({
@@ -140,7 +140,7 @@ export function ManageReportsView({
   const [busyId, setBusyId] = React.useState<string | null>(null)
 
   // The copy deck is read inside async callbacks and effects that must not
-  // re-run — refetching the page, losing the rows already loaded — just because
+  // re-run - refetching the page, losing the rows already loaded - just because
   // the reader switched language. Same trick useSocketEvent plays with handlers.
   const copy = React.useRef(t)
   React.useEffect(() => {
@@ -162,7 +162,7 @@ export function ManageReportsView({
   }, [])
 
   /**
-   * Takes a row off the list and out of the count — either because it was
+   * Takes a row off the list and out of the count - either because it was
    * removed, or because it no longer matches the filters it was found under.
    *
    * The decrement happens inside the updater, next to the check that the row
@@ -280,7 +280,7 @@ export function ManageReportsView({
   useSocketEvent("report:updated", (incoming) => {
     const existing = reports.find((report) => report.id === incoming.id)
     if (!existing) return
-    // An edit can move a report out from under the filter that is switched on —
+    // An edit can move a report out from under the filter that is switched on -
     // verifying one while "Not verified" is selected, say.
     settle(
       { ...incoming, myVote: existing.myVote, isOwner: existing.isOwner },
@@ -818,7 +818,7 @@ function EditReportDialog({
 
 /**
  * Removing someone else's report is not the same act as removing your own, so
- * the console asks first — the resident's dialog deletes on the one press
+ * the console asks first - the resident's dialog deletes on the one press
  * because the report being removed is theirs.
  */
 function ConfirmRemoveDialog({

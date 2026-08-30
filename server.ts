@@ -43,7 +43,7 @@ const io = new SocketIOServer(httpServer, {
 registerSocketServer(io)
 attachSocketHandlers(io)
 
-// Next attaches its own 'upgrade' listener lazily for HMR — do not add one here.
+// Next attaches its own 'upgrade' listener lazily for HMR - do not add one here.
 httpServer.listen(port, hostname, () => {
   console.log(
     `> Pampanga Flood Watch on http://${hostname}:${port}  (dev=${dev})`

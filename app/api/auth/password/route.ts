@@ -10,7 +10,7 @@ import { changePasswordSchema } from "@/lib/validation"
  *
  * The current password is verified even though the caller is already signed in:
  * the session cookie proves the browser was left signed in, which is exactly
- * the situation this guards against — a shared or borrowed phone must not be
+ * the situation this guards against - a shared or borrowed phone must not be
  * enough to lock the owner out of their own account.
  */
 export async function PUT(request: NextRequest) {

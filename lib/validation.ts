@@ -109,8 +109,8 @@ export const reportQuerySchema = z.object({
 })
 
 /**
- * The officials' report console. No recency bound — the console's whole point
- * is the reports the resident dashboard's recency window has already dropped —
+ * The officials' report console. No recency bound - the console's whole point
+ * is the reports the resident dashboard's recency window has already dropped -
  * and an offset instead, because the list is walked a page at a time rather
  * than topped up live.
  */
@@ -126,8 +126,8 @@ export const manageReportQuerySchema = z.object({
 })
 
 /**
- * The accounts console. Shaped like the report console's query — free text,
- * area, a page at a time — because it is the same officer doing the same kind
+ * The accounts console. Shaped like the report console's query - free text,
+ * area, a page at a time - because it is the same officer doing the same kind
  * of work: finding one row in a province's worth of them.
  */
 export const manageUserQuerySchema = z.object({
@@ -144,7 +144,7 @@ export const manageUserQuerySchema = z.object({
  * What an officer may change about someone else's account.
  *
  * The email is not on the list. It is the identity the account signs in with,
- * so changing it hands the account to a different person — a transfer, not a
+ * so changing it hands the account to a different person - a transfer, not a
  * correction, and not something to do from a row in a list.
  */
 export const updateUserSchema = z
@@ -157,7 +157,7 @@ export const updateUserSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: "Nothing to update" })
 
 /**
- * An officer setting someone else's password — the "ask the app admin to reset
+ * An officer setting someone else's password - the "ask the app admin to reset
  * it for you" the sign-in screen promises. No current password is asked for
  * because the officer does not have it; the authority is the OFFICIAL role,
  * checked at the endpoint.

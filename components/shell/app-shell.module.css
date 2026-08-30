@@ -1,4 +1,4 @@
-/* App chrome — design lines 110-196 (headers, banners) and 775-815 (drawer). */
+/* App chrome - design lines 110-196 (headers, banners) and 775-815 (drawer). */
 
 /* CSS Modules rewrite every animation name they see, so a bare
    `animation: fw-x` would point at a local keyframe that does not exist.

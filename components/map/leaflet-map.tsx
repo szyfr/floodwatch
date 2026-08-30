@@ -296,7 +296,7 @@ export default function LeafletMap({
     }
   }, [syncSelection])
 
-  // Creates the map exactly once. Data lands through the effects below —
+  // Creates the map exactly once. Data lands through the effects below -
   // rebuilding here would refetch every tile and lose the reader's pan/zoom.
   useEffect(() => {
     let cancelled = false
@@ -318,7 +318,7 @@ export default function LeafletMap({
       })
       focusKeyRef.current = `${start.lat},${start.lng},${start.zoom}`
 
-      // No `detectRetina` here on purpose — TILE_URL's own `{r}` covers
+      // No `detectRetina` here on purpose - TILE_URL's own `{r}` covers
       // high-DPI screens, and the option would quadruple the tile count.
       L.tileLayer(TILE_URL, {
         maxZoom: TILE_MAX_ZOOM,
@@ -367,7 +367,7 @@ export default function LeafletMap({
       setReady(true)
     })
     load.catch((error: unknown) => {
-      // A failed map is a degraded page, not a blank one — say so out loud.
+      // A failed map is a degraded page, not a blank one - say so out loud.
       console.error("[flood-map] could not initialise Leaflet", error)
     })
 

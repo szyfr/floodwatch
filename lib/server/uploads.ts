@@ -18,7 +18,7 @@ import {
  * written by app/api/uploads/route.ts and read back by
  * app/uploads/[name]/route.ts.
  *
- * Bytes live in S3 when S3_BUCKET is set, and on local disk otherwise — so a
+ * Bytes live in S3 when S3_BUCKET is set, and on local disk otherwise - so a
  * development machine needs no AWS credentials and no bucket.
  *
  * Either way the public URL stays `/uploads/<uuid>.<ext>`, a same-origin path.

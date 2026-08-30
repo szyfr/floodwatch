@@ -1,4 +1,4 @@
-/* Broadcast tab — design lines 591-666. */
+/* Broadcast tab - design lines 591-666. */
 
 .card {
   display: flex;
@@ -107,7 +107,7 @@
 
 /* CSS Modules rewrites a bare animation name to a module-local one, but these
    keyframes are global (styles/tokens.css). Passing the name through a custom
-   property keeps the reference intact — do not inline it back. */
+   property keeps the reference intact - do not inline it back. */
 .shakeA {
   --fw-shake: fw-shake-a;
   animation: var(--fw-shake) 320ms ease;

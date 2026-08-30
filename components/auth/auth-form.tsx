@@ -111,7 +111,7 @@ export function AuthForm({
       ) {
         fail(error.fields)
       } else {
-        // No per-field detail to show — a dropped connection or a 500.
+        // No per-field detail to show - a dropped connection or a 500.
         showToast(t.toast.error, t.toast.errorSub, "warn")
       }
       setPending(false)

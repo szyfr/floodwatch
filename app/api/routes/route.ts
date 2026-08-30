@@ -7,8 +7,8 @@ import { reportQuerySchema } from "@/lib/validation"
 const scopeQuery = reportQuerySchema.pick({ lgu: true })
 
 /**
- * Route drawing is phase 2 in the design — the admin tab shows a disabled empty
- * state — so this reads the table that exists and returns nothing today.
+ * Route drawing is phase 2 in the design - the admin tab shows a disabled empty
+ * state - so this reads the table that exists and returns nothing today.
  */
 export type RouteDto = {
   id: string

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { PRIORITY_COLOR, formatAgo, minutesSince } from "@/lib/domain"
 import type { AlertDto } from "@/lib/dto"
 
-/** One broadcast in the list — design lines 549-568. */
+/** One broadcast in the list - design lines 549-568. */
 export function AlertCard({
   alert,
   onDismiss,

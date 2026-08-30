@@ -28,7 +28,7 @@ export default async function ManageReportsPage({
 }) {
   const user = await getSessionUser()
   if (!user) redirect("/signin?next=/reports")
-  // Residents are sent back to the map rather than shown a locked screen —
+  // Residents are sent back to the map rather than shown a locked screen -
   // the same choice /admin makes.
   if (user.role !== "OFFICIAL") redirect("/dashboard")
 

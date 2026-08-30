@@ -40,5 +40,5 @@ next-env.d.ts
 /var/uploads/*
 !/var/uploads/.gitkeep
 
-# Prisma generates TypeScript source here — regenerate, do not commit
+# Prisma generates TypeScript source here - regenerate, do not commit
 /generated/prisma

@@ -48,7 +48,7 @@ type Filters = {
   order: UserOrder
 }
 
-/** Sentinel for the "all areas" row — Select wants a string. */
+/** Sentinel for the "all areas" row - Select wants a string. */
 const ANY = "*"
 
 /** Keystrokes settle before the console asks the server again. */
@@ -100,7 +100,7 @@ export function ManageUsersView({
   const [resetting, setResetting] = React.useState<ManagedUserDto | null>(null)
   const [changingOwn, setChangingOwn] = React.useState(false)
 
-  // Read inside callbacks that must not re-run — and so refetch the page —
+  // Read inside callbacks that must not re-run - and so refetch the page -
   // just because the reader switched language.
   const copy = React.useRef(t)
   React.useEffect(() => {
@@ -435,7 +435,7 @@ export function ManageUsersView({
  * What an officer may correct about an account: the name it files reports
  * under, the office it speaks for, the area it belongs to, and the role.
  *
- * The email is not here — it is the identity the account signs in with, so
+ * The email is not here - it is the identity the account signs in with, so
  * changing it hands the account to someone else rather than fixing a typo.
  */
 function EditUserDialog({
@@ -648,7 +648,7 @@ function EditUserDialog({
 }
 
 /**
- * Setting somebody else's password — the "ask the app admin" path the sign-in
+ * Setting somebody else's password - the "ask the app admin" path the sign-in
  * screen promises. The officer is not asked for the old password because they
  * do not have it; the new one has to reach the person some other way, which
  * the dialog says out loud rather than implying an email that is never sent.

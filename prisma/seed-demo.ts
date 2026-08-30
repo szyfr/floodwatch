@@ -3,7 +3,7 @@
  * hours of readings, 7 safe zones, 18 flood reports and 4 broadcast alerts,
  * exactly as the design bundle mocks them up.
  *
- * Local testing only — `bun run db:seed:demo`. The default `db:seed` (and the
+ * Local testing only - `bun run db:seed:demo`. The default `db:seed` (and the
  * seed `prisma migrate reset` runs) creates just the cities and the account.
  *
  * Re-running replaces the demo content wholesale rather than duplicating it;
@@ -109,7 +109,7 @@ async function main() {
         downvotes: report.downvotes,
         verifiedAt: report.verified ? createdAt : null,
         verifiedById: report.verified ? admin.id : null,
-        // Seeded reports are synthetic, so they carry no reporter — the UI
+        // Seeded reports are synthetic, so they carry no reporter - the UI
         // renders them as "Anonymous", a state the design already covers.
         authorId: null,
         createdAt,

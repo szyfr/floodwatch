@@ -25,7 +25,7 @@ ips=$( { curl -fsS --max-time 20 https://www.cloudflare.com/ips-v4; echo
 # would silently narrow the set of addresses we trust.
 count=$(printf '%s\n' "$ips" | grep -c '/')
 if [ "$count" -lt 10 ]; then
-  echo "only $count ranges returned — refusing to write $CONF" >&2
+  echo "only $count ranges returned - refusing to write $CONF" >&2
   exit 1
 fi
 
@@ -33,7 +33,7 @@ tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
 {
   sed '/^# >>> cloudflare-ips/,$d' "$CONF"
-  echo "# >>> cloudflare-ips  (generated $(date -u +%F) — refresh with ./refresh-cloudflare-ips.sh)"
+  echo "# >>> cloudflare-ips  (generated $(date -u +%F) - refresh with ./refresh-cloudflare-ips.sh)"
   printf '%s\n' "$ips" | sed 's#^#set_real_ip_from #; s#$#;#'
   echo "# <<< cloudflare-ips"
   sed '1,/^# <<< cloudflare-ips/d' "$CONF"
@@ -42,4 +42,4 @@ cat "$tmp" > "$CONF"
 
 echo "$CONF: $count Cloudflare ranges"
 command -v nginx >/dev/null && nginx -t 2>&1 | tail -2 || \
-  echo "nginx not on PATH here — run 'sudo nginx -t && sudo systemctl reload nginx' on the server"
+  echo "nginx not on PATH here - run 'sudo nginx -t && sudo systemctl reload nginx' on the server"

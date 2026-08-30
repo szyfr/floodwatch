@@ -15,7 +15,7 @@ import {
 
 /**
  * The only two formats the submit form offers, with the extension we write.
- * Maps, not objects — the key comes from the client, and a plain object lookup
+ * Maps, not objects - the key comes from the client, and a plain object lookup
  * would walk Object.prototype for a part declaring `Content-Type: constructor`.
  */
 const ACCEPTED = new Map([
@@ -40,7 +40,7 @@ const rejected = () =>
 
 /**
  * Moderation refused the photo. A distinct code from `rejected()`, because the
- * file itself was a valid JPG or PNG well under the size cap — answering with
+ * file itself was a valid JPG or PNG well under the size cap - answering with
  * the format message would send the reporter off to fix something that was
  * never wrong.
  */
@@ -80,12 +80,12 @@ export async function POST(request: NextRequest) {
     return rejected()
   }
 
-  // The upload's own name never reaches the disk — it decides neither the
+  // The upload's own name never reaches the disk - it decides neither the
   // filename nor the extension, so it cannot escape the upload directory.
   const name = `${randomUUID()}.${extension}`
   try {
     // The stored content type comes from the extension we just validated, not
-    // from the client's declared type — the same reason the magic bytes are
+    // from the client's declared type - the same reason the magic bytes are
     // checked above.
     await putUpload(name, bytes, CONTENT_TYPES[extension])
   } catch (error) {
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Moderation runs against the stored object, so a rejected photo has to be
-  // taken back off S3. It fails open — see lib/server/moderation.ts.
+  // taken back off S3. It fails open - see lib/server/moderation.ts.
   const ref = uploadStorageRef(name)
   if (ref) {
     const verdict = await moderatePhoto(ref.bucket, ref.key)

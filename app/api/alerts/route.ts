@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   if (body.response) return body.response
   const input = body.data
 
-  // A province-wide alert stores no AlertArea rows — the scope enum carries it,
+  // A province-wide alert stores no AlertArea rows - the scope enum carries it,
   // and listAlerts reads PROVINCE as "everyone" without touching the join table.
   const areas =
     input.scope === "AREAS"

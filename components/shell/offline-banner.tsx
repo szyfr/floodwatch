@@ -6,7 +6,7 @@ import styles from "@/components/shell/offline-banner.module.css"
 import { useLanguage } from "@/components/providers/language-provider"
 
 /**
- * Shown above every screen — including sign in and sign up, where the design
+ * Shown above every screen - including sign in and sign up, where the design
  * places it outside the screen switch.
  */
 export function OfflineBanner({ queuedCount = 0 }: { queuedCount?: number }) {

@@ -42,7 +42,7 @@ export function AlertsView({
   // navigation can never show a list the server has already moved past.
   const [liveAlerts, setLiveAlerts] = React.useState<AlertDto[]>([])
   // Device-local dismissals live in a shared store, so the header badge and the
-  // banner in the shell agree with this list — for signed-out readers that
+  // banner in the shell agree with this list - for signed-out readers that
   // store is the only record there is.
   const dismissedIds = React.useSyncExternalStore(
     subscribeDismissed,

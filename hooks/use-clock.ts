@@ -6,8 +6,8 @@ import * as React from "react"
  * One 30-second clock for every relative time on a page.
  *
  * Reading "now" through a store rather than calling Date.now() during render
- * keeps the hydrated markup identical to the server's — the server's own clock
- * answers for the first render, the reader's takes over on hydration — and ages
+ * keeps the hydrated markup identical to the server's - the server's own clock
+ * answers for the first render, the reader's takes over on hydration - and ages
  * every card on the screen in the same beat rather than each on its own timer.
  *
  * The store is module-level, so the dashboard and the report console share one

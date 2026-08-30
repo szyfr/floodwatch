@@ -18,7 +18,7 @@ import {
  * loads the row so a deleted or demoted account loses access immediately.
  *
  * Wrapped in React's cache() because a single navigation asks for the viewer
- * three times over — the root layout, the app layout and the page itself — and
+ * three times over - the root layout, the app layout and the page itself - and
  * each ask was previously its own JWT verify and its own user query. The memo
  * lives on React's per-request dispatcher, so it cannot outlive the request:
  * with no dispatcher (a route handler, a script) cache() falls through to the
@@ -68,7 +68,7 @@ export function toSessionUser(user: UserWithLgu): SessionUserDto {
   }
 }
 
-/** Route handlers and server actions only — cookies cannot be set while rendering. */
+/** Route handlers and server actions only - cookies cannot be set while rendering. */
 export async function startSession(user: {
   id: string
   email: string

@@ -10,7 +10,7 @@ import { listLgus, listZones } from "@/lib/server/queries"
 export const metadata: Metadata = { title: en.admin.title }
 
 // A Record rather than an array so TypeScript rejects a tab added to the union
-// and forgotten here — the list itself lives in the client component, which the
+// and forgotten here - the list itself lives in the client component, which the
 // server cannot import a value from.
 const TABS: Record<AdminTab, true> = {
   broadcast: true,
@@ -19,7 +19,7 @@ const TABS: Record<AdminTab, true> = {
 }
 
 /**
- * The operations desk. Officials only — residents are sent back to the map
+ * The operations desk. Officials only - residents are sent back to the map
  * rather than shown a locked screen.
  */
 export default async function AdminPage({

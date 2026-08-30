@@ -14,7 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Prisma emits TypeScript source here; it is generated, not authored.
     "generated/**",
-    // The design handoff bundle — prototype source, not part of the app.
+    // The design handoff bundle - prototype source, not part of the app.
     "docs/**",
   ]),
 ]);

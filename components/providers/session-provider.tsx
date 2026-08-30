@@ -18,7 +18,7 @@ export function SessionProvider({
   )
 }
 
-/** null when nobody is signed in — the map and reports stay readable either way. */
+/** null when nobody is signed in - the map and reports stay readable either way. */
 export function useSession(): SessionUserDto | null {
   return React.useContext(SessionContext)
 }

@@ -16,7 +16,7 @@ export type FloodWatchSocket = Socket<
 
 /**
  * One connection per tab. Held outside React so the provider does not have to
- * publish it through state — the instance exists from the first client render,
+ * publish it through state - the instance exists from the first client render,
  * and socket.io buffers anything emitted before the handshake completes.
  */
 let singleton: FloodWatchSocket | null = null

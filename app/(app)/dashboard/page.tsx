@@ -23,7 +23,7 @@ function first(value: string | string[] | undefined): string | null {
 
 /**
  * Scope, filters and the open report all live in the URL so a link is
- * shareable. Values that are not in the enums are dropped rather than refused —
+ * shareable. Values that are not in the enums are dropped rather than refused -
  * they arrive from stale links and hand-edited addresses.
  */
 export default async function DashboardPage({

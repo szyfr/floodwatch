@@ -20,7 +20,7 @@ import { changePasswordSchema, fieldErrors } from "@/lib/validation"
  * Lives beside the sign-in form rather than in the officials' console because
  * it belongs to every account: a resident reaches it from the nav drawer, and
  * an officer gets the same dialog for their own row rather than the reset one
- * they use on everybody else's — their current password is something they are
+ * they use on everybody else's - their current password is something they are
  * expected to have.
  */
 export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {

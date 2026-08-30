@@ -3,7 +3,7 @@
 
    This is PLAIN GLOBAL CSS on purpose. A CSS Module would hash both the class
    names and the @keyframes names, and every marker body here is a raw HTML
-   string handed to L.divIcon() — the hashed names would never match, so the
+   string handed to L.divIcon() - the hashed names would never match, so the
    markers would render unstyled. Leaflet's own .leaflet-* classes have the
    same problem. Import it from a client component. */
 

@@ -7,7 +7,7 @@ type Context = { params: Promise<{ name: string }> }
  * Serves report photos. They cannot live in `public/`: Next indexes that folder
  * once at startup, so anything uploaded afterwards would 404 in production.
  *
- * The bytes come from S3 or from local disk depending on configuration — see
+ * The bytes come from S3 or from local disk depending on configuration - see
  * lib/server/uploads.ts. The URL shape stays the same either way, which is what
  * lets photoUrl remain a same-origin path (lib/validation.ts).
  */

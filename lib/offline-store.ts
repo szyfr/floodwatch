@@ -32,7 +32,7 @@ function save(items: QueuedReport[]): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
   } catch {
-    /* storage blocked or full — the queue lives on in memory for this session */
+    /* storage blocked or full - the queue lives on in memory for this session */
   }
   for (const listener of listeners) listener()
 }

@@ -1,4 +1,4 @@
-/* Area picker — design lines 817-845. */
+/* Area picker - design lines 817-845. */
 
 /* CSS Modules rewrite every animation name they see, so a bare
    `animation: fw-x` would point at a local keyframe that does not exist.

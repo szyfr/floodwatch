@@ -1,4 +1,4 @@
-/* Report detail dialog — design lines 847-915. */
+/* Report detail dialog - design lines 847-915. */
 
 /* CSS Modules rewrite every animation name they see, so a bare
    `animation: fw-x` would point at a local keyframe that does not exist.

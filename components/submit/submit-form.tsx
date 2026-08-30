@@ -104,7 +104,7 @@ export function SubmitForm({
   defaultLguSlug,
 }: {
   lgus: LguDto[]
-  /** Non-null in edit mode — the viewer's own report, prefilled. */
+  /** Non-null in edit mode - the viewer's own report, prefilled. */
   report: ReportDto | null
   presetLguSlug: string | null
   defaultLguSlug: string
@@ -249,8 +249,8 @@ export function SubmitForm({
 
     const text = description.trim()
 
-    // An edit has to reach the server — there is no sensible way to queue a
-    // change to a row other people are already voting on — so say so plainly
+    // An edit has to reach the server - there is no sensible way to queue a
+    // change to a row other people are already voting on - so say so plainly
     // rather than letting the fetch fail into a generic error.
     if (!online && report) {
       setSending(false)

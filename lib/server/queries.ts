@@ -55,7 +55,7 @@ import {
  *
  * 2. Only JSON-safe values cross the boundary. unstable_cache stringifies what
  *    it stores and parses what it serves, so a Date goes in and a string comes
- *    out — but only on a hit; a miss returns the live object. Returning a
+ *    out - but only on a hit; a miss returns the live object. Returning a
  *    Prisma row would therefore work on the first request and throw on the
  *    second. Everything cached here is already a DTO with ISO strings.
  */
@@ -67,14 +67,14 @@ const TTL = {
   alerts: 15,
   gauges: 120,
   zones: 300,
-  /** Effectively reference data — nothing in the running app writes an LGU. */
+  /** Effectively reference data - nothing in the running app writes an LGU. */
   lgus: 60 * 60 * 24,
 } as const
 
 /**
  * Cache keys have to hold still. Every report and alert query is bounded by a
  * "now", and threading Date.now() straight through would mint a fresh key every
- * millisecond — a cache that never hits once. The caller rounds now down to a
+ * millisecond - a cache that never hits once. The caller rounds now down to a
  * bucket instead, so every request inside the same bucket shares one entry.
  *
  * Rounding *down* is the safe direction in both places it is used. The report
@@ -166,7 +166,7 @@ export async function getLguBySlug(slug: string): Promise<LguDto | null> {
 }
 
 /**
- * Every area with what it is reporting right now — the area picker, and the
+ * Every area with what it is reporting right now - the area picker, and the
  * refetch the dashboard makes after a removal to get the province's counts
  * straight. Shares the dashboard's cached rollup and is dropped by the same
  * report writes.
@@ -174,7 +174,7 @@ export async function getLguBySlug(slug: string): Promise<LguDto | null> {
  * The window is fixed at the default one, matching what this endpoint has
  * always returned. The dashboard rolls up over whatever recency the viewer has
  * chosen instead, so on a non-default filter the two land on different entries
- * and report different counts — a pre-existing disagreement between the two
+ * and report different counts - a pre-existing disagreement between the two
  * surfaces that is preserved here rather than introduced.
  */
 export async function listLguSummaries(): Promise<LguSummaryDto[]> {
@@ -190,7 +190,7 @@ export async function listLguSummaries(): Promise<LguSummaryDto[]> {
  *
  * This is a safety valve, not a nicety. perScope memoises one wrapper per scope
  * string for the life of the process, and the JSON API takes `?lgu=` on trust
- * after a shape check alone — so an unauthenticated caller varying the slug
+ * after a shape check alone - so an unauthenticated caller varying the slug
  * could otherwise mint wrappers, and on-disk cache entries Next never prunes,
  * without bound. Resolving here closes the key space to the twenty-two areas
  * plus the unscoped case, which is what perScope's comment assumes.
@@ -287,7 +287,7 @@ export type ReportFilters = {
 }
 
 /**
- * The viewer's own votes for one page of reports, in a single indexed lookup —
+ * The viewer's own votes for one page of reports, in a single indexed lookup -
  * ReportVote is unique on (reportId, userId). Signed-out viewers skip it.
  */
 async function viewerVotes(
@@ -342,7 +342,7 @@ export async function listReports(
  *
  * Every write route reads the row back through this and hands the result
  * straight to broadcast(), so a cached read here would push pre-write counts
- * out over the socket and visually undo the viewer's own vote — wrong data
+ * out over the socket and visually undo the viewer's own vote - wrong data
  * rather than merely stale. It is a primary-key lookup, so there is little to
  * win by caching it anyway.
  */
@@ -376,7 +376,7 @@ export type ManageReportFilters = {
  *
  * Deliberately uncached, and for two reasons rather than one. The obvious one
  * is freshness: this is the screen an officer verifies and removes from, and it
- * has to show the result of their own last action. The other is the key space —
+ * has to show the result of their own last action. The other is the key space -
  * the console filters on free text, which perScope's memoised-wrapper-per-key
  * approach cannot bound the way `knownScope` bounds the twenty-two areas.
  *
@@ -478,7 +478,7 @@ export async function listUsers(
       where,
       include: {
         lgu: { select: { slug: true, name: true } },
-        // Filtered so a removed report stops counting against its author —
+        // Filtered so a removed report stops counting against its author -
         // the console shows what someone has standing, not what they once
         // filed.
         _count: { select: { reports: { where: { deletedAt: null } } } },
@@ -553,7 +553,7 @@ export async function listGauges(lguSlug?: string | null): Promise<GaugeDto[]> {
 // ----------------------------------------------------------------- alerts
 
 /**
- * One tag and one TTL for every alert read, scoped or not — see lib/server/cache.ts
+ * One tag and one TTL for every alert read, scoped or not - see lib/server/cache.ts
  * for why per-area alert tags cannot work. The TTL is not optional here: alerts
  * leave the list by clock, through the expiresAt comparison below, and nothing
  * ever writes `active: false`, so no invalidation could ever fire for an expiry.
@@ -629,7 +629,7 @@ export async function getDashboard(
   const createdAfter = since(filters.recency ?? DEFAULT_RECENCY, nowBucket())
 
   // An unknown area empties the scoped panels but leaves the province-wide
-  // ones — the rollup and the evacuation total — exactly as they were.
+  // ones - the rollup and the evacuation total - exactly as they were.
   const [lgus, reports, zones, gauges, allZones, scopeCount, rollup] =
     await Promise.all([
       cachedLgus(),

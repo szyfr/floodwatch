@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: Context) {
   const { lguSlug, ...input } = body.data
 
   // updateZoneSchema is createZoneSchema.partial(), which keeps that schema's
-  // `occupancy: 0` default — so a parsed patch always carries an occupancy even
+  // `occupancy: 0` default - so a parsed patch always carries an occupancy even
   // when the editor never touched it. The dialog has no occupancy field at all,
   // so trusting the parsed value would empty every centre it saves. Only the
   // keys actually sent get written.

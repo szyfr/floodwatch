@@ -42,7 +42,7 @@ export async function PATCH(request: NextRequest, { params }: Context) {
   if (!existing) return notFound("Report not found")
 
   // Content is the author's to edit and the DRRM office's to correct on any
-  // report — the office works the whole province from the report console, where
+  // report - the office works the whole province from the report console, where
   // a mislabelled water level or a pin in the wrong barangay is theirs to fix.
   // Verification stays the office's alone.
   const isOfficial = auth.user.role === "OFFICIAL"

@@ -1,5 +1,5 @@
 /* =============================================================
-   Pampanga Flood Watch — design tokens.
+   Pampanga Flood Watch - design tokens.
    Lifted from the handoff bundle's design system
    (docs/ui-mockups-pending-scope/project/_ds/.../colors_and_type.css)
    and from the literal values in the prototype markup.
@@ -52,7 +52,7 @@
   --fw-vote-down-bg: #fee2e2;
   --fw-vote-down-fg: #b91c1c;
 
-  /* Water levels — must match lib/domain.ts LEVEL_META */
+  /* Water levels - must match lib/domain.ts LEVEL_META */
   --fw-level-ankle: #fbbf24;
   --fw-level-ankle-fg: #422006;
   --fw-level-knee: #f97316;

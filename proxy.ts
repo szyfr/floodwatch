@@ -19,7 +19,7 @@ function isCrossSite(request: NextRequest): boolean {
   if (fetchSite) return fetchSite !== "same-origin" && fetchSite !== "none"
 
   // Older ones only send Origin. A missing Origin on an unsafe method is not a
-  // browser form post, so it is left to the route's own auth check — that keeps
+  // browser form post, so it is left to the route's own auth check - that keeps
   // curl and server-to-server calls working.
   const origin = request.headers.get("origin")
   if (!origin) return false

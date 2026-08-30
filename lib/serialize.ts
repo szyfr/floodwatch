@@ -223,7 +223,7 @@ type ManagedUserRow = {
 /**
  * An account row for the officials' console. `viewerId` is threaded in rather
  * than compared on the client because "this is you" decides what the console
- * refuses to do — an officer cannot take their own last powers away — and that
+ * refuses to do - an officer cannot take their own last powers away - and that
  * judgement belongs on the same side as the endpoint that enforces it.
  */
 export function toManagedUser(

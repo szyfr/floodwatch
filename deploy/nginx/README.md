@@ -2,12 +2,12 @@
 
 `floodwatch.conf` is the whole nginx configuration for this app: the
 `$connection_upgrade` / `$fw_proto` maps, the Cloudflare real-IP block, and both
-server blocks, in one file. It is the canonical copy — `DEPLOYMENT.md` §5
+server blocks, in one file. It is the canonical copy - `DEPLOYMENT.md` §5
 explains the reasoning but does not repeat the config.
 
 It is one file on purpose. `sites-enabled/*` is included from inside nginx.conf's
 `http{}` block, so the `map` and `set_real_ip_from` directives are legal there.
-Do not also drop a copy of the maps under `conf.d/` — nginx then fails to start
+Do not also drop a copy of the maps under `conf.d/` - nginx then fails to start
 with `duplicate map`.
 
 ## Before it will load
@@ -46,8 +46,8 @@ HTTP but does close proxied WebSockets; clients reconnect on their own.
 - **SSL/TLS → Full (strict).** Flexible leaves the edge-to-origin hop in
   plaintext and makes the Origin CA certificate pointless.
 - **Always Use HTTPS: on.**
-- **Network → WebSockets: on** — without it `/ws` never reaches this box.
-- **Rocket Loader: off** — it reorders script execution and breaks React
+- **Network → WebSockets: on** - without it `/ws` never reaches this box.
+- **Rocket Loader: off** - it reorders script execution and breaks React
   hydration.
 - **Cache Rules:** bypass cache for `/api/*` and `/ws*`.
 - The DNS record is **proxied** (orange cloud), and the security group allows

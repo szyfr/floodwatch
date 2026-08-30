@@ -78,7 +78,7 @@ export function ProvincePanel({
     )
   }
 
-  // Worst water first, then the busiest area, then the freshest report — the
+  // Worst water first, then the busiest area, then the freshest report - the
   // order a duty officer reads the province in.
   const rows = lgus
     .flatMap((lgu) => {

@@ -1,5 +1,5 @@
 /**
- * Demo content for local testing — river gauges, flood reports, alerts and
+ * Demo content for local testing - river gauges, flood reports, alerts and
  * safe zones, lifted verbatim from the design prototype
  * (docs/ui-mockups-pending-scope/project/Pampanga Flood Watch.dc.html).
  * `minutesAgo` values are turned into absolute timestamps at seed time so the
@@ -98,9 +98,9 @@ export const REPORTS: SeedReport[] = [
     verified: true,
     hasPhoto: true,
     description:
-      "Chest-deep at the crossing and still rising. Trucks are turning back — do not attempt on a tricycle.",
+      "Chest-deep at the crossing and still rising. Trucks are turning back - do not attempt on a tricycle.",
     descriptionTl:
-      "Hanggang dibdib sa crossing at tumataas pa. Bumabalik na ang mga truck — huwag subukan sa tricycle.",
+      "Hanggang dibdib sa crossing at tumataas pa. Bumabalik na ang mga truck - huwag subukan sa tricycle.",
   },
   {
     ref: "r2",
@@ -156,7 +156,7 @@ export const REPORTS: SeedReport[] = [
   {
     ref: "r5",
     lguSlug: "sf",
-    locationName: "JASA — Magliman crossing, San Fernando",
+    locationName: "JASA - Magliman crossing, San Fernando",
     waterLevel: "IMPASSABLE",
     lat: 15.0268,
     lng: 120.6702,
@@ -224,7 +224,7 @@ export const REPORTS: SeedReport[] = [
   {
     ref: "r9",
     lguSlug: "santaana",
-    locationName: "Santa Ana — San Nicolas road",
+    locationName: "Santa Ana - San Nicolas road",
     waterLevel: "CAR_DEEP",
     lat: 15.092,
     lng: 120.764,
@@ -241,7 +241,7 @@ export const REPORTS: SeedReport[] = [
   {
     ref: "r10",
     lguSlug: "macabebe",
-    locationName: "Macabebe — Masantol road",
+    locationName: "Macabebe - Masantol road",
     waterLevel: "CAR_DEEP",
     lat: 14.898,
     lng: 120.719,
@@ -373,7 +373,7 @@ export const REPORTS: SeedReport[] = [
   {
     ref: "r18",
     lguSlug: "mexico",
-    locationName: "Mexico — Santo Tomas road",
+    locationName: "Mexico - Santo Tomas road",
     waterLevel: "ANKLE",
     lat: 15.062,
     lng: 120.712,
@@ -410,9 +410,9 @@ export const ALERTS: SeedAlert[] = [
     sentBy: "Flood Watch operations",
     areas: ["candaba", "sanluis", "arayat"],
     title:
-      "Evacuation ordered — riverside barangays of Candaba, San Luis and Arayat",
+      "Evacuation ordered - riverside barangays of Candaba, San Luis and Arayat",
     titleTl:
-      "Utos na lumikas — mga barangay sa tabing-ilog ng Candaba, San Luis at Arayat",
+      "Utos na lumikas - mga barangay sa tabing-ilog ng Candaba, San Luis at Arayat",
     message:
       "Rio Chico is at third alarm and still rising. Proceed to the nearest evacuation centre now. Provincial rescue teams are staging at the Candaba municipal hall.",
     messageTl:
@@ -439,12 +439,12 @@ export const ALERTS: SeedAlert[] = [
     minutesAgo: 64,
     sentBy: "Flood Watch Macabebe",
     areas: ["macabebe", "masantol"],
-    title: "Macabebe — Masantol road closed to light vehicles",
-    titleTl: "Sarado sa magagaang sasakyan ang Macabebe — Masantol road",
+    title: "Macabebe - Masantol road closed to light vehicles",
+    titleTl: "Sarado sa magagaang sasakyan ang Macabebe - Masantol road",
     message:
-      "Use the Apalit — San Simon route instead. Tanods are posted at both ends of the closure.",
+      "Use the Apalit - San Simon route instead. Tanods are posted at both ends of the closure.",
     messageTl:
-      "Gamitin muna ang Apalit — San Simon na ruta. May tanod sa dalawang dulo ng saradong bahagi.",
+      "Gamitin muna ang Apalit - San Simon na ruta. May tanod sa dalawang dulo ng saradong bahagi.",
   },
   {
     ref: "a4",

@@ -8,7 +8,7 @@ import { resetPasswordSchema } from "@/lib/validation"
 type Context = { params: Promise<{ id: string }> }
 
 /**
- * An officer setting someone else's password — what the sign-in screen means
+ * An officer setting someone else's password - what the sign-in screen means
  * by "ask the app admin to reset it for you".
  *
  * PUT rather than PATCH: a password is replaced whole, and there is nothing

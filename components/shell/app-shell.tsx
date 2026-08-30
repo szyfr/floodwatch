@@ -123,7 +123,7 @@ export function AppShell({
   const unread = live.length
   const banner = live[0]
 
-  // "The map, reports and alerts follow this choice" — so the chosen area
+  // "The map, reports and alerts follow this choice" - so the chosen area
   // travels with every navigation instead of resetting at each screen.
   const withScope = (href: string) =>
     scopeSlug ? `${href}?lgu=${scopeSlug}` : href

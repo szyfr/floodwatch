@@ -18,7 +18,7 @@ export type AttachedPhoto = { url: string; name: string; size: number | null }
 
 const ACCEPTED = ["image/jpeg", "image/png"]
 
-/** "2.1MB" — the size half of the design's attached-photo label. */
+/** "2.1MB" - the size half of the design's attached-photo label. */
 function formatSize(bytes: number): string {
   return bytes >= 1024 * 1024
     ? `${(bytes / 1024 / 1024).toFixed(1)}MB`
@@ -27,7 +27,7 @@ function formatSize(bytes: number): string {
 
 /**
  * The dashed drop area. The file is uploaded the moment it is chosen so the
- * form only ever carries a URL — a queued offline report cannot hold bytes.
+ * form only ever carries a URL - a queued offline report cannot hold bytes.
  */
 export function PhotoUpload({
   photo,
@@ -70,7 +70,7 @@ export function PhotoUpload({
       showToast(
         t.toast.error,
         status === 0
-          ? t.toast.errorSub // no response at all — connection
+          ? t.toast.errorSub // no response at all - connection
           : failure?.code === "MODERATED"
             ? t.err.photoContent // a valid file whose content was refused
             : badFile

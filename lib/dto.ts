@@ -33,7 +33,7 @@ export type LguSummaryDto = LguDto & {
   latestMinutesAgo: number | null
 }
 
-/** A report as everyone sees it — no viewer-specific fields. */
+/** A report as everyone sees it - no viewer-specific fields. */
 export type PublicReportDto = {
   id: string
   lguId: string
@@ -128,8 +128,8 @@ export type EvacuationSummaryDto = {
 
 /**
  * An account as the officials' console sees it. A superset of SessionUserDto
- * rather than a reuse of it: the console needs the row's own history — when it
- * was opened, how much the person has filed — which the viewer's own session
+ * rather than a reuse of it: the console needs the row's own history - when it
+ * was opened, how much the person has filed - which the viewer's own session
  * has no business carrying.
  */
 export type ManagedUserDto = {
@@ -142,7 +142,7 @@ export type ManagedUserDto = {
   language: Language
   lguSlug: string
   lguName: string
-  /** Reports still standing — a removed one is not held against its author. */
+  /** Reports still standing - a removed one is not held against its author. */
   reportCount: number
   createdAt: string
   /** The viewer's own account, which the console guards differently. */
@@ -172,7 +172,7 @@ export type DashboardDto = {
   /** null while the province view is active. */
   lgu: LguDto | null
   reports: ReportDto[]
-  /** Reports in scope before level/recency filters — drives the pins. */
+  /** Reports in scope before level/recency filters - drives the pins. */
   totalInScope: number
   gauges: GaugeDto[]
   zones: ZoneDto[]

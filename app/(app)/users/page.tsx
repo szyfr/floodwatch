@@ -12,9 +12,9 @@ export const metadata: Metadata = { title: en.users.title }
 /**
  * Every account in the province, for the DRRM office alone.
  *
- * A screen of its own for the report console's reason — the panel's tabs stay
+ * A screen of its own for the report console's reason - the panel's tabs stay
  * mounted, and a paged list of every resident is not something to keep mounted
- * behind a half-written evacuation order — and because the two consoles are
+ * behind a half-written evacuation order - and because the two consoles are
  * genuinely different jobs: one works a backlog of sightings, this one answers
  * "who is this person and what can they do".
  *
@@ -28,7 +28,7 @@ export default async function ManageUsersPage({
 }) {
   const user = await getSessionUser()
   if (!user) redirect("/signin?next=/users")
-  // Residents are sent back to the map rather than shown a locked screen —
+  // Residents are sent back to the map rather than shown a locked screen -
   // the same choice /admin and /reports make.
   if (user.role !== "OFFICIAL") redirect("/dashboard")
 

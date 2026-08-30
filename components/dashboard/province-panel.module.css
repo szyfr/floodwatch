@@ -1,4 +1,4 @@
-/* Province panel — design lines 244-317 (gauges, evacuation, LGU rows). */
+/* Province panel - design lines 244-317 (gauges, evacuation, LGU rows). */
 
 /* CSS Modules rewrite every animation name they see, so a bare
    `animation: fw-x` would point at a local keyframe that does not exist.

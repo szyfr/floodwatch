@@ -42,7 +42,7 @@ export type FloodMapProps = {
  * `next/dynamic` boundary.
  *
  * It fills its parent absolutely, so the PARENT must be positioned and have a
- * real height — the design's dashboard cell uses
+ * real height - the design's dashboard cell uses
  * `position:relative;z-index:0;isolation:isolate` with a fixed or flexed
  * height. Inside a zero-height or statically positioned box Leaflet
  * initialises into a 0px container and paints an empty grey panel.

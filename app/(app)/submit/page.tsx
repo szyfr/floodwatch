@@ -22,7 +22,7 @@ export default async function SubmitPage({
   const [user, params] = await Promise.all([getSessionUser(), searchParams])
 
   if (!user) {
-    // Keep the deep link — someone following an edit link should land back on
+    // Keep the deep link - someone following an edit link should land back on
     // that report, not on a blank form.
     const query = new URLSearchParams()
     for (const key of ["edit", "lgu"]) {

@@ -116,7 +116,7 @@ export const en = {
     photoDoneHint: "Tap to replace",
     send: "Submit report",
     sending: "Sending…",
-    queue: "You are offline — this will send by itself once you have signal.",
+    queue: "You are offline - this will send by itself once you have signal.",
   },
   err: {
     name: "Enter a location name so neighbours can find it.",
@@ -188,7 +188,7 @@ export const en = {
   },
   manage: {
     title: "All reports",
-    sub: "Every report filed in Pampanga — verify, correct or remove.",
+    sub: "Every report filed in Pampanga - verify, correct or remove.",
     search: "Search reports",
     searchPh: "Search a location or description",
     area: "Area",
@@ -222,7 +222,7 @@ export const en = {
   },
   users: {
     title: "User accounts",
-    sub: "Every account registered in Pampanga — roles, areas and passwords.",
+    sub: "Every account registered in Pampanga - roles, areas and passwords.",
     search: "Search accounts",
     searchPh: "Search a name or email",
     area: "Area",
@@ -251,7 +251,7 @@ export const en = {
     reset: "Reset password",
     resetTitle: "Set a new password",
     resetSub:
-      "They can sign in with this straight away. Tell it to them yourself — the app sends nothing.",
+      "They can sign in with this straight away. Tell it to them yourself - the app sends nothing.",
     resetDone: "Password changed",
     resetDoneSub: "Give them the new password in person.",
     sessionsNote: "Anywhere they are already signed in stays signed in.",
@@ -308,7 +308,7 @@ export const en = {
     bcast: "Alert broadcast",
     bcastSub: "Delivered to the areas you selected.",
     voted: "Vote counted",
-    votedSub: "Thanks — this helps neighbours judge the report.",
+    votedSub: "Thanks - this helps neighbours judge the report.",
     zone: "Safe zone saved",
     zoneSub: "Residents will see it on the map right away.",
     deleted: "Report deleted",
@@ -330,7 +330,7 @@ export const en = {
     zoomOut: "Zoom out",
     fitProvince: "Fit the whole province",
     pickHint: "Tap the map to drop your pin",
-    pickPlaced: "Pin placed — tap again to move it",
+    pickPlaced: "Pin placed - tap again to move it",
   },
   roles: { RESIDENT: "Resident", OFFICIAL: "Official" },
 } as const
@@ -454,7 +454,7 @@ export const tl: Dictionary = {
     photoDoneHint: "I-tap para palitan",
     send: "Ipadala ang report",
     sending: "Ipinapadala…",
-    queue: "Offline ka — kusa itong ipapadala kapag may signal.",
+    queue: "Offline ka - kusa itong ipapadala kapag may signal.",
   },
   err: {
     name: "Ilagay ang pangalan ng lugar para makita ito ng kapitbahay.",
@@ -533,7 +533,7 @@ export const tl: Dictionary = {
   },
   manage: {
     title: "Lahat ng report",
-    sub: "Bawat report sa Pampanga — beripikahin, itama o alisin.",
+    sub: "Bawat report sa Pampanga - beripikahin, itama o alisin.",
     search: "Maghanap ng report",
     searchPh: "Maghanap ng lugar o paglalarawan",
     area: "Lugar",
@@ -567,7 +567,7 @@ export const tl: Dictionary = {
   },
   users: {
     title: "Mga account",
-    sub: "Bawat account na nakarehistro sa Pampanga — role, lugar at password.",
+    sub: "Bawat account na nakarehistro sa Pampanga - role, lugar at password.",
     search: "Maghanap ng account",
     searchPh: "Maghanap ng pangalan o email",
     area: "Lugar",
@@ -596,7 +596,7 @@ export const tl: Dictionary = {
     reset: "I-reset ang password",
     resetTitle: "Maglagay ng bagong password",
     resetSub:
-      "Agad na nila itong magagamit. Kayo mismo ang magsabi sa kanila — walang ipinapadala ang app.",
+      "Agad na nila itong magagamit. Kayo mismo ang magsabi sa kanila - walang ipinapadala ang app.",
     resetDone: "Napalitan ang password",
     resetDoneSub: "Ibigay sa kanila ang bagong password nang personal.",
     sessionsNote:
@@ -654,7 +654,7 @@ export const tl: Dictionary = {
     bcast: "Naipadala ang abiso",
     bcastSub: "Naipadala sa mga lugar na pinili mo.",
     voted: "Nabilang ang boto",
-    votedSub: "Salamat — nakakatulong ito sa mga kapitbahay.",
+    votedSub: "Salamat - nakakatulong ito sa mga kapitbahay.",
     zone: "Naka-save ang safe zone",
     zoneSub: "Agad itong makikita ng mga residente sa mapa.",
     deleted: "Naalis ang report",
@@ -676,7 +676,7 @@ export const tl: Dictionary = {
     zoomOut: "Mag-zoom out",
     fitProvince: "Ipakita ang buong lalawigan",
     pickHint: "I-tap ang mapa para maglagay ng pin",
-    pickPlaced: "Nakalagay na ang pin — i-tap ulit para ilipat",
+    pickPlaced: "Nakalagay na ang pin - i-tap ulit para ilipat",
   },
   roles: { RESIDENT: "Residente", OFFICIAL: "Opisyal" },
 }
@@ -684,7 +684,7 @@ export const tl: Dictionary = {
 export const dictionaries = { en, tl } as const
 
 /**
- * A field failure — from a zod schema or a route handler — is reported as a
+ * A field failure - from a zod schema or a route handler - is reported as a
  * dictionary key under `t.auth`, so every form that touches an account looks
  * its copy up the same way. Anything else is a shape we have no copy for.
  */

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: Context) {
   const key = { reportId_userId: { reportId: id, userId } }
 
   // Read, write and counter update share one transaction, and the counters move
-  // by a delta derived from the vote that was actually there — so two votes
+  // by a delta derived from the vote that was actually there - so two votes
   // landing at once cannot leave upvotes/downvotes out of step with the rows.
   const lguSlug = await prisma.$transaction(async (tx) => {
     const report = await tx.floodReport.findFirst({

@@ -1,4 +1,4 @@
-/* Dashboard shell — design lines 198-425. */
+/* Dashboard shell - design lines 198-425. */
 
 /* CSS Modules rewrite every animation name they see, so a bare
    `animation: fw-x` would point at a local keyframe that does not exist.
@@ -8,7 +8,7 @@
 .dashboard {
   position: relative;
   /* An explicit 0 basis, not `flex: 1`: a percentage basis against the shell's
-     auto height falls back to content size, and the page — not the list —
+     auto height falls back to content size, and the page - not the list -
      ends up being what scrolls. */
   flex: 1 1 0px;
   min-height: 0;

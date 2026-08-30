@@ -107,7 +107,7 @@ export function ZoneManager({
           ? `${formatCount(zone.occupancy)} ${t.zone.occ} / ${formatCount(
               zone.capacity
             )} ${t.zone.cap.toLowerCase()}`
-          : "—"
+          : "-"
         const contact = [zone.contactName, zone.contactPhone]
           .filter((part) => part)
           .join(" · ")
@@ -235,7 +235,7 @@ function ZoneDialog({
   )
   const areaLabels = Object.fromEntries(lgus.map((lgu) => [lgu.slug, lgu.name]))
 
-  // Save stays live, as the design draws it — pressing it is how an officer
+  // Save stays live, as the design draws it - pressing it is how an officer
   // finds out what is missing. The dictionary already carries both messages.
   async function save() {
     const missingName = name.trim().length < 2

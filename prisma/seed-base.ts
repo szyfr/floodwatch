@@ -1,9 +1,9 @@
 /**
  * The plumbing both seed entrypoints share: the Prisma client they talk to and
- * the baseline content — the 22 cities and municipalities plus the one account
- * — that every environment needs before anything else can reference it.
+ * the baseline content - the 22 cities and municipalities plus the one account
+ * - that every environment needs before anything else can reference it.
  *
- * Idempotent — re-running updates in place rather than duplicating.
+ * Idempotent - re-running updates in place rather than duplicating.
  */
 import "dotenv/config"
 

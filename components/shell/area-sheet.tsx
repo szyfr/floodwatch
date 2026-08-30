@@ -9,7 +9,7 @@ import { LEVEL_META } from "@/lib/domain"
 import type { LguSummaryDto } from "@/lib/dto"
 
 /**
- * "Choose an area" — the one place scope changes. Every surface follows the
+ * "Choose an area" - the one place scope changes. Every surface follows the
  * selection, so it is chrome rather than a dashboard control.
  */
 export function AreaSheet({

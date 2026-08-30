@@ -1,4 +1,4 @@
-// Pampanga Flood Watch — data model.
+// Pampanga Flood Watch - data model.
 // Mirrors the entities the design bundle describes: cities/municipalities,
 // citizen flood reports with crowd votes, DRRM broadcast alerts, safe zones
 // and PAGASA-style river gauges.
@@ -146,7 +146,7 @@ model FloodReport {
   authorId      String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
-  /// Soft delete — the map drops it, the audit trail keeps it.
+  /// Soft delete - the map drops it, the audit trail keeps it.
   deletedAt     DateTime?
 
   lgu        Lgu          @relation(fields: [lguId], references: [id], onDelete: Cascade)
@@ -289,7 +289,7 @@ model GaugeReading {
   @@index([gaugeId, observedAt(sort: Desc)])
 }
 
-/// Phase 2 in the design — the model exists so route drawing has somewhere to
+/// Phase 2 in the design - the model exists so route drawing has somewhere to
 /// land; the panel still shows the empty state until drawing ships.
 model EvacuationRoute {
   id          String    @id @default(cuid())

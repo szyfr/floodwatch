@@ -137,7 +137,7 @@ export function NavDrawer({
           {user ? (
             <>
               {/* Every account can change its own password, resident or
-                  official — the console's reset is for somebody else's. */}
+                  official - the console's reset is for somebody else's. */}
               <button
                 type="button"
                 className={styles.footerButton}

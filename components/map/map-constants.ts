@@ -20,17 +20,17 @@ import {
  * colour, and street names at the zooms where a reporter drops a pin.
  *
  * The design mocked this up on Esri's Light Gray Canvas, and Stadia's closest
- * equivalent is `alidade_smooth` — swap the style segment below if you ever
+ * equivalent is `alidade_smooth` - swap the style segment below if you ever
  * want it. It was tried and rejected for the same reason Light Gray Canvas
  * was: at z17 over San Fernando it labels two streets to OSM Bright's five and
  * renders buildings light-grey on white. A resident locating their flooded
  * street navigates by those labels, so legibility beats the paler mockup.
  *
- * Addressed {z}/{x}/{y}. Esri's ArcGIS services use {z}/{y}/{x} — row before
- * column — so swapping providers means swapping this too.
+ * Addressed {z}/{x}/{y}. Esri's ArcGIS services use {z}/{y}/{x} - row before
+ * column - so swapping providers means swapping this too.
  *
  * `{r}` is Leaflet's retina placeholder, and it resolves to "@2x" from
- * `Browser.retina` alone — it does NOT need, and must not get, the
+ * `Browser.retina` alone - it does NOT need, and must not get, the
  * `detectRetina` option. That option also halves `tileSize` and bumps
  * `zoomOffset`, which asks for tiles a zoom level deeper and quadruples both
  * the request count and the bill. `{r}` on its own buys a sharper map on the
@@ -50,7 +50,7 @@ import {
  * There is no API-key fallback on purpose. Stadia's key travels as a query
  * parameter, so on a public site it would be inlined into the client bundle at
  * build time and published to every visitor. If some future host genuinely
- * cannot be allowlisted, add the key here consciously — restricted to that
+ * cannot be allowlisted, add the key here consciously - restricted to that
  * property in the Stadia dashboard, and treated as published, never a secret.
  */
 export const TILE_URL =
@@ -61,7 +61,7 @@ export const TILE_ATTRIBUTION =
   '&copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> ' +
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
 
-/** OSM Bright has real tiles to 20 — one deeper than OSM's own raster. */
+/** OSM Bright has real tiles to 20 - one deeper than OSM's own raster. */
 export const TILE_MAX_ZOOM = 20
 
 /** Rivers, the focus ring, the picker pin and the selected pin all share it. */

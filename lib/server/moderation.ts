@@ -16,13 +16,13 @@ import {
  * Two deliberate policies:
  *
  * It FAILS OPEN. A Rekognition outage, a timeout, or a missing permission logs
- * and allows the photo through. This is a flood-warning service — during the
+ * and allows the photo through. This is a flood-warning service - during the
  * event it exists for, being unable to file a report is worse than an
  * unmoderated photo reaching the map.
  *
  * It blocks EVERY category by default. REKOGNITION_ALLOW_CATEGORIES is the
  * escape hatch, because AWS's taxonomy is broad and some of it collides badly
- * with disaster imagery — "Violence" reads rescue scenes and wrecked vehicles,
+ * with disaster imagery - "Violence" reads rescue scenes and wrecked vehicles,
  * and "Visually Disturbing" covers injuries, blood and drowned livestock, which
  * is precisely what a DRRM officer most needs to see. When real reports start
  * being rejected, add those category names to the allow list and restart; no
@@ -54,7 +54,7 @@ function rekognition(): RekognitionClient {
 
 export type ModerationVerdict = {
   blocked: boolean
-  /** Every label the API returned, for the journal — "Category / Label 98.2%". */
+  /** Every label the API returned, for the journal - "Category / Label 98.2%". */
   labels: string[]
 }
 

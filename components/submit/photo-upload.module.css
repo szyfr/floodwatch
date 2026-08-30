@@ -1,4 +1,4 @@
-/* Photo attachment — design lines 510-518. */
+/* Photo attachment - design lines 510-518. */
 
 /* CSS Modules rewrite every animation name they see, so a bare
    `animation: fw-x` would point at a local keyframe that does not exist.

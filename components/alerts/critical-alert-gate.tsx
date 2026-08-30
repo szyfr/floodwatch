@@ -16,7 +16,7 @@ const ACK_KEY = "fw.ack.critical"
 /**
  * Acknowledged evacuation orders, remembered on the device. An external store
  * so the gate can read localStorage without touching it during render or
- * setting state from an effect — the same shape as lib/i18n/language-store.ts.
+ * setting state from an effect - the same shape as lib/i18n/language-store.ts.
  */
 let cache: ReadonlySet<string> | undefined
 const listeners = new Set<() => void>()
@@ -44,7 +44,7 @@ function getAcknowledged(): ReadonlySet<string> | null {
   return cache
 }
 
-/** null means "not known yet" — an order already acknowledged must not flash. */
+/** null means "not known yet" - an order already acknowledged must not flash. */
 function getAcknowledgedOnServer(): ReadonlySet<string> | null {
   return null
 }
@@ -56,7 +56,7 @@ function acknowledge(id: string): void {
   try {
     window.localStorage.setItem(ACK_KEY, JSON.stringify([...next]))
   } catch {
-    /* private mode — the acknowledgement still holds for this tab */
+    /* private mode - the acknowledgement still holds for this tab */
   }
   for (const listener of listeners) listener()
 }

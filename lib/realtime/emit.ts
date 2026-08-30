@@ -13,7 +13,7 @@ import { getSocketServer } from "@/lib/realtime/registry"
  * a single copy.
  *
  * Silently no-ops when the socket server is absent (build-time prerender,
- * scripts) — realtime is an enhancement, never a hard dependency of a write.
+ * scripts) - realtime is an enhancement, never a hard dependency of a write.
  */
 export function broadcast<E extends keyof ServerToClientEvents>(
   event: E,

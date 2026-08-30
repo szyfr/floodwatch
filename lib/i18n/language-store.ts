@@ -17,7 +17,7 @@ export function subscribeLanguage(onChange: () => void): () => void {
   }
 }
 
-/** null when the device has no stored preference — the caller falls back. */
+/** null when the device has no stored preference - the caller falls back. */
 export function getStoredLanguage(): Language | null {
   if (cache === undefined) {
     try {
@@ -39,7 +39,7 @@ export function storeLanguage(lang: Language): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, lang)
   } catch {
-    /* private mode — the choice still holds for this session */
+    /* private mode - the choice still holds for this session */
   }
   for (const listener of listeners) listener()
 }

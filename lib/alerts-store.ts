@@ -1,7 +1,7 @@
 /**
  * Alerts cleared on this device. A signed-in viewer's dismissal is persisted
  * server-side, but the list, the header badge and the banner all have to agree
- * immediately — and for a signed-out reader this store is the only record.
+ * immediately - and for a signed-out reader this store is the only record.
  *
  * External store rather than component state so every surface sees the same
  * set without prop-drilling through the shell.
@@ -46,7 +46,7 @@ export function dismissAlertLocally(id: string): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...next]))
   } catch {
-    /* private mode — the dismissal still holds for this tab */
+    /* private mode - the dismissal still holds for this tab */
   }
   for (const listener of listeners) listener()
 }

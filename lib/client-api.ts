@@ -117,7 +117,7 @@ export const api = {
       body: JSON.stringify(input),
     }),
 
-  /** Officials only — every report, any age, filtered and paged. */
+  /** Officials only - every report, any age, filtered and paged. */
   manageReports: (params: {
     q?: string | null
     lgu?: string | null
@@ -128,7 +128,7 @@ export const api = {
     limit?: number
   }) => request<ManageReportsDto>(`/api/admin/reports${query(params)}`),
 
-  /** Officials only — every account, filtered and paged. */
+  /** Officials only - every account, filtered and paged. */
   manageUsers: (params: {
     q?: string | null
     lgu?: string | null
@@ -144,7 +144,7 @@ export const api = {
       body: JSON.stringify(input),
     }),
 
-  /** Officials only — sets someone else's password without knowing the old one. */
+  /** Officials only - sets someone else's password without knowing the old one. */
   resetUserPassword: (id: string, input: ResetPasswordInput) =>
     request<{ ok: true }>(`/api/admin/users/${id}/password`, {
       method: "PUT",
