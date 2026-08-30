@@ -1199,6 +1199,8 @@ These are all the variables the code actually reads:
 | `PORT` | `server.ts` | `3000` (loopback only; nginx proxies to it) |
 | `HOSTNAME` | `server.ts` | `127.0.0.1` — see the warning below |
 | `NEXT_PUBLIC_SOCKET_PATH` | `lib/realtime/events.ts` | `/ws`. **Inlined at build time** into the client bundle. |
+| `S3_BUCKET` | `lib/server/uploads.ts` | Optional. Unset = photos on local disk under `var/uploads`. Set it and photos go to S3 instead; the public URL stays `/uploads/<uuid>.<ext>` either way. |
+| `AWS_REGION` | AWS SDK | Only with `S3_BUCKET`. Credentials come from the EC2 instance role via IMDS — never put AWS keys in `.env`. |
 | `NEXT_PUBLIC_STADIA_API_KEY` | `components/map/map-constants.ts` | Optional, and normally **unset** — map tiles authenticate by domain allowlist instead. Also inlined at build time, so it is public; set it only where a hostname cannot be allowlisted. |
 | `NODE_ENV` | `server.ts`, `lib/db.ts`, `lib/auth/token.ts` | `production`. Set by the `start` script / systemd unit — leave it out of `.env`. |
 | `SEED_ADMIN_PASSWORD` | `prisma/seed-data.ts` | Seed only. Pass it inline for one command; **never** put it in `.env`. |
@@ -1397,6 +1399,8 @@ stat -c '%U %G %a %n' /srv/floodwatch/var/uploads
 ```
 
 `750` is enough: nginx never reads these files, the Node process streams them.
+
+**With `S3_BUCKET` set**, none of that applies to new photos — they go to the bucket and `var/uploads` is only read for photos stored before the switch. Two follow-ons once you are confident nothing is left on disk: copy the stragglers up with `aws s3 sync var/uploads "s3://$S3_BUCKET/uploads/"`, and drop `/var/www/floodwatch/var` from the unit's `ReadWritePaths`, since the service no longer writes there. Set a bucket lifecycle rule too — deleting a report is a soft delete and nothing ever removes the file, so storage grows without bound in either backend.
 
 **If you move to a release-directory scheme,** where each deploy is a fresh clone into `/srv/floodwatch/releases/<timestamp>` with a `current` symlink, note that systemd resolves `WorkingDirectory` symlinks at start time and Node's `process.cwd()` returns the *physical* path. So `UPLOAD_DIR` becomes `/srv/floodwatch/releases/<timestamp>/var/uploads` — every deploy silently starts with an empty photo directory and orphans the old one. Make `var/uploads` (and `.env`, for the same reason) a symlink into shared storage in every release:
 

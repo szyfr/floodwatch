@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto"
-import { mkdir, writeFile } from "node:fs/promises"
 
 import type { NextRequest } from "next/server"
 
 import { apiError, json, requireUser } from "@/lib/api"
 import { PHOTO_MAX_BYTES } from "@/lib/domain"
-import { UPLOAD_DIR, uploadUrl } from "@/lib/server/uploads"
+import { CONTENT_TYPES, putUpload, uploadUrl } from "@/lib/server/uploads"
 
 /**
  * The only two formats the submit form offers, with the extension we write.
@@ -65,8 +64,15 @@ export async function POST(request: NextRequest) {
   // The upload's own name never reaches the disk — it decides neither the
   // filename nor the extension, so it cannot escape the upload directory.
   const name = `${randomUUID()}.${extension}`
-  await mkdir(UPLOAD_DIR, { recursive: true })
-  await writeFile(`${UPLOAD_DIR}/${name}`, bytes)
+  try {
+    // The stored content type comes from the extension we just validated, not
+    // from the client's declared type — the same reason the magic bytes are
+    // checked above.
+    await putUpload(name, bytes, CONTENT_TYPES[extension])
+  } catch (error) {
+    console.error("[uploads] could not store photo", error)
+    return apiError("Could not store that photo", 502, { code: "STORAGE" })
+  }
 
   return json({ url: uploadUrl(name) })
 }
