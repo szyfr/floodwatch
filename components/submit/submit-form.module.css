@@ -176,6 +176,22 @@
   box-shadow: var(--fw-shadow-xs);
 }
 
+/* Not an error - the area moved because the reporter's own pin moved it. The
+   same colour as .queueNote, which is this form's register for "the app did
+   something on your behalf". */
+.areaNote {
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-amber-fg-soft);
+}
+/* It is a live region, so it stays mounted and empties rather than unmounting.
+   That rules out `display: none`, which would take it back out of the
+   accessibility tree between announcements and put us back where we started.
+   An empty span is already zero-height; all that is left to reclaim is the
+   .section flex gap above it, hence the exact negative of that 7px. */
+.areaNote:empty {
+  margin-top: -7px;
+}
+
 .mono {
   font-family: var(--fw-font-mono);
   font-size: 13px;

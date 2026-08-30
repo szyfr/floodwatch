@@ -8,6 +8,7 @@ import type {
   AlertType,
   GaugeTrend,
   Language,
+  PlaceKind,
   WaterLevel,
   ZoneType,
 } from "@/lib/domain"
@@ -31,6 +32,48 @@ export type LguSummaryDto = LguDto & {
   reportCount: number
   worstLevel: WaterLevel | null
   latestMinutesAgo: number | null
+}
+
+/**
+ * One place the picker can jump to.
+ *
+ * Provider-neutral on purpose. Nothing here is the geocoder's shape - no
+ * osm_id, no [lon,lat] tuple, no `extent` (Photon's is [W,N,E,S], which is not
+ * GeoJSON order and is a silent bug waiting to happen). Swapping geocoders is a
+ * change to lib/server/geocode.ts and nothing else.
+ */
+export type PlaceDto = {
+  /** Stable within one response only. A list key, never something to store. */
+  id: string
+  /**
+   * The headline, already composed: "Sindalan", "Guagua Public Market".
+   * Between 2 and 160 characters, because it can be dropped straight into
+   * locationName, which createReportSchema bounds at exactly that.
+   */
+  label: string
+  /** The quieter second line, or null when it would only repeat the label. */
+  context: string | null
+  lat: number
+  lng: number
+  kind: PlaceKind
+  /**
+   * The LGU slug, but only when the geocoder NAMED a municipality on our
+   * roster. Never a nearest-centroid guess: that is wrong exactly at
+   * boundaries, which is where flooding gets reported.
+   */
+  area: string | null
+}
+
+/**
+ * The picker's answer. `degraded` says the geocoder was not asked at all - the
+ * province-wide ceiling was in force and this is whatever the cache held - so
+ * an empty list means "we did not look", not "nothing is there". The UI has to
+ * be able to tell those apart, or it tells a reporter their barangay does not
+ * exist on the busiest night of the year.
+ */
+export type PlacesDto = {
+  places: PlaceDto[]
+  degraded?: boolean
 }
 
 /** A report as everyone sees it - no viewer-specific fields. */

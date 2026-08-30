@@ -70,6 +70,66 @@ export const PROVINCE_ZOOM = 10
 export const LGU_ZOOM = 13
 export const PICKER_ZOOM = 14
 
+/** How precise a place-search hit is. It decides only how far the picker flies. */
+export const PLACE_KINDS = ["area", "locality", "street", "spot"] as const
+export type PlaceKind = (typeof PLACE_KINDS)[number]
+
+/**
+ * Where the picker lands for each kind of hit. Capped at 16: at this latitude
+ * that is 2.3 m/px, so the 230px picker box shows about 530 m, which is close
+ * enough to confirm a crossing without losing the surrounding streets.
+ */
+export const PLACE_ZOOM: Record<PlaceKind, number> = {
+  area: LGU_ZOOM,
+  locality: 15,
+  street: 16,
+  spot: 16,
+}
+
+/**
+ * A generous box around Pampanga, sent to the geocoder as a relevance bound.
+ * It is NOT a province filter - Photon answers "macarthur highway mexico" with
+ * a Bulacan segment that sits inside this rectangle - so the adapter also drops
+ * anything whose state is not Pampanga. Loose at the edges on purpose: someone
+ * on the Bulacan or Bataan line is still reporting a Pampanga flood.
+ */
+export const PROVINCE_BBOX = {
+  west: 120.33,
+  south: 14.72,
+  east: 121.05,
+  north: 15.45,
+} as const
+
+/** Photon's own name for the province, as it appears in `properties.state`. */
+export const PROVINCE_NAME = "Pampanga"
+
+/**
+ * A GPS fix is only worth the zoom its accuracy earns.
+ *
+ * The picker box is 230px tall, so at this latitude zoom 16 shows about 530m
+ * and zoom 18 about 130m. Flying to street level on a 500m fix would draw a
+ * confident pin on one specific corner the phone never actually identified,
+ * which is worse data than an honest wide shot: the reporter cannot correct a
+ * mistake they cannot see. Framing the uncertainty is the point.
+ */
+export function zoomForAccuracy(metres: number): number {
+  if (metres <= 25) return 18
+  if (metres <= 75) return 17
+  if (metres <= 200) return 16
+  if (metres <= 600) return 15
+  return PICKER_ZOOM
+}
+
+/** "80 m" / "1.2 km". The units read the same in both languages. */
+export function formatMetres(metres: number): string {
+  return metres >= 1000
+    ? `${(metres / 1000).toFixed(1)} km`
+    : `${Math.round(metres)} m`
+}
+
+/** Above this a fix is reported as rough, with the figure spelled out. */
+export const ROUGH_FIX_METRES = 100
+
 /** A report is flagged "New" while it is younger than this. */
 export const NEW_REPORT_MINUTES = 10
 /** Reports older than this drop out of the default "live" feed. */

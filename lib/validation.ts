@@ -141,6 +141,17 @@ export const manageUserQuerySchema = z.object({
 })
 
 /**
+ * The picker's place search. `q` is free text on its way to a third party, so
+ * it is bounded as tightly as the consoles bound theirs. The minimum of 3 is a
+ * fairness floor rather than a UX one: it is what keeps a single keystroke from
+ * becoming an upstream request.
+ */
+export const placeQuerySchema = z.object({
+  q: z.string().trim().min(3).max(120),
+  lang: z.enum(["en", "tl"]).default("en"),
+})
+
+/**
  * What an officer may change about someone else's account.
  *
  * The email is not on the list. It is the identity the account signs in with,

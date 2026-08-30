@@ -17,6 +17,18 @@ export type FloodMapProps = {
   level: "province" | "lgu"
   /** Where the map sits. Changing it flies there; identical values are ignored. */
   focus: { lat: number; lng: number; zoom: number }
+  /**
+   * A one-shot camera move, for a place the reporter searched. Read by
+   * IDENTITY, not by value: pass a NEW object to move, and null the rest of the
+   * time. That is the opposite of `focus` above, and it is the point. `focus`
+   * is derived from the selected area, so two hits inside the same
+   * municipality carry identical numbers and `focus` ignores them by contract.
+   * It also anchors the LGU ring, which has no business following a search hit.
+   *
+   * Hold it in state. An object literal written inline at a call site is a new
+   * object on every render and would fly on every keystroke.
+   */
+  flyTo?: (MapPoint & { zoom: number }) | null
   lgus?: LguSummaryDto[]
   pins?: PublicReportDto[]
   zones?: ZoneDto[]

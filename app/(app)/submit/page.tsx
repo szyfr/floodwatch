@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation"
 
 import { SubmitForm } from "@/components/submit/submit-form"
 import { getSessionUser } from "@/lib/auth/session"
+import { geocodeEnabled } from "@/lib/server/geocode"
 import { en } from "@/lib/i18n/dictionary"
 import { getReport, listLgus } from "@/lib/server/queries"
 
@@ -50,6 +51,7 @@ export default async function SubmitPage({
       report={report}
       presetLguSlug={first(params.lgu)}
       defaultLguSlug={user.lguSlug}
+      placeSearch={geocodeEnabled}
     />
   )
 }

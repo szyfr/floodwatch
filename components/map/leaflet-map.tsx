@@ -109,6 +109,7 @@ export default function LeafletMap({
   labels = true,
   loading = false,
   pickedPoint,
+  flyTo = null,
   onSelectReport,
   onSelectLgu,
   onPick,
@@ -398,6 +399,32 @@ export default function LeafletMap({
     focusKeyRef.current = key
     map.flyTo([focus.lat, focus.lng], focus.zoom, { duration: 0.8 })
   }, [focus.lat, focus.lng, focus.zoom, ready])
+
+  /**
+   * A searched place, as a one-shot move. Deliberately its own effect rather
+   * than folded into `focus` above: `focus` also positions the LGU ring below,
+   * so repurposing it would drag a 4.2 km "this is your area" circle onto a
+   * street corner. Keyed on object identity, so selecting the same result twice
+   * flies twice, which the value compare above cannot do.
+   *
+   * It must stay AFTER the focus effect. A search can change the area select
+   * and the target in one commit; both effects then run, in source order, and
+   * this one lands last and wins. Nothing has to cancel the first flight -
+   * L.Map.flyTo calls _stop() before it starts.
+   *
+   * `focusKeyRef` is deliberately untouched: this is a camera move, not a new
+   * `focus`, and clearing the latch would invite a stray fly-back later.
+   * `ready` is in the deps so a selection made while Leaflet is still being
+   * imported is honoured once the map exists instead of being dropped.
+   *
+   * It is also kept out of `sig`: a redraw clears every layer and replays each
+   * marker's pop-in, which would read as a full-map flicker on every search.
+   */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !flyTo) return
+    map.flyTo([flyTo.lat, flyTo.lng], flyTo.zoom, { duration: 0.8 })
+  }, [flyTo, ready])
 
   useEffect(() => {
     draw()

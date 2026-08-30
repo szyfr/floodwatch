@@ -1,0 +1,219 @@
+/* The picker's place search - the field above the map on "Submit report". */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-spin` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+
+/* ------------------------------------------------------------------- field */
+
+.field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.icon {
+  position: absolute;
+  left: 11px;
+  color: var(--fw-fg-faint);
+  pointer-events: none;
+}
+
+/* The submit form's field skin, redeclared here rather than reached for across
+   module boundaries - the same thing photo-upload.module.css does with its own
+   .label and .hint. `height: auto` with a 44px floor is what beats the 32px
+   `h-8` that components/ui/input.tsx ships, and 44px is the touch target. */
+.input {
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  padding: 4px 38px 4px 34px;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-md);
+  box-shadow: var(--fw-shadow-xs);
+  font: 400 15px/21px var(--fw-font-sans);
+  color: var(--fw-fg);
+  outline: none;
+  transition:
+    border-color 120ms var(--fw-ease),
+    box-shadow 120ms var(--fw-ease);
+}
+.input::placeholder {
+  color: var(--fw-fg-muted);
+}
+.input:focus,
+.input:focus-visible {
+  border-color: var(--fw-border-strong);
+  box-shadow:
+    var(--fw-shadow-xs),
+    0 0 0 3px rgba(10, 10, 10, 0.08);
+}
+
+.spinner {
+  position: absolute;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--fw-fg-muted);
+  --fw-anim: fw-spin;
+  animation: var(--fw-anim) 700ms linear infinite;
+}
+
+.clear {
+  position: absolute;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--fw-radius-full);
+  background: transparent;
+  color: var(--fw-fg-muted);
+  cursor: pointer;
+}
+.clear:hover {
+  background: var(--fw-bg-muted);
+}
+
+/* ------------------------------------------------------------------- popup */
+
+.positioner {
+  z-index: 50;
+}
+
+/* Portalled precisely so it escapes the picker box, which is `overflow: hidden`
+   with `isolation: isolate`. Inside it the list would be clipped to 230px and
+   would have to out-stack the map's own chrome. */
+.popup {
+  width: var(--anchor-width);
+  /* --available-height is what the positioner measured between the field and
+     the viewport edge. A bare 300px ignores it, and on a short landscape phone
+     the last row ends up under the fold with no way to reach it. */
+  max-height: min(300px, var(--available-height, 300px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-lg);
+  box-shadow: var(--fw-shadow-md);
+}
+
+.status {
+  padding: 8px 10px;
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+/* Base UI's Status must stay mounted to announce reliably, so an empty one
+   loses its padding rather than its box. `display: none` would take it out of
+   the accessibility tree between announcements, which is the one thing its
+   documentation says not to do. */
+.status:empty {
+  padding: 0;
+}
+.statusOffline {
+  color: var(--fw-amber-fg-soft);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
+}
+/* Base UI empties this element's children whenever the list has rows, and the
+   div itself stays mounted by design. Without this the padding survives as a
+   24px blank band above every set of results. Same reasoning as .status above:
+   drop the padding, keep the box. */
+.empty:empty {
+  padding: 0;
+}
+
+.emptyTitle {
+  font: 500 14px/19px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.emptySub {
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+/* -------------------------------------------------------------------- rows */
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.groupLabel {
+  padding: 6px 10px 2px;
+  font: 500 11px/14px var(--fw-font-ui);
+  color: var(--fw-fg-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: var(--fw-radius-md);
+  cursor: pointer;
+}
+.row[data-highlighted] {
+  background: var(--fw-accent-bg);
+}
+
+.rowIcon {
+  flex: none;
+  color: var(--fw-fg-faint);
+}
+
+.rowText {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rowLabel,
+.rowContext {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowLabel {
+  font: 400 15px/21px var(--fw-font-sans);
+  color: var(--fw-fg);
+}
+
+.rowContext {
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+
+/* Photon serves OpenStreetMap data under ODbL and the map's own attribution
+   control credits only the tiles, so this row is a licence obligation rather
+   than decoration. It is plain text on purpose: a link inside a listbox is a
+   tab-order nuisance, and Leaflet already links openstreetmap.org/copyright on
+   the same screen. Do not tidy it away. */
+.attribution {
+  /* Sticky, not merely last: the popup scrolls, and a credit that scrolls out
+     of sight on a full list is not being displayed. */
+  position: sticky;
+  bottom: -4px;
+  margin: 0 -4px -4px;
+  padding: 7px 14px 9px;
+  background: var(--fw-bg);
+  border-top: 1px solid var(--fw-border-soft);
+  font: 400 11px/15px var(--fw-font-sans);
+  color: var(--fw-fg-fainter);
+}

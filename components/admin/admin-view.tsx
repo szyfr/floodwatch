@@ -30,11 +30,14 @@ export function AdminView({
   lgus,
   zones,
   scopeSlug,
+  placeSearch,
 }: {
   tab: AdminTab
   lgus: LguDto[]
   zones: ZoneDto[]
   scopeSlug: string
+  /** False when the server has no geocoder; the zone picker loses its search. */
+  placeSearch: boolean
 }) {
   const { t } = useLanguage()
   const router = useRouter()
@@ -89,7 +92,12 @@ export function AdminView({
               <BroadcastForm lgus={lgus} />
             </div>
             <div hidden={tab !== "zones"}>
-              <ZoneManager lgus={lgus} zones={zones} scopeSlug={scopeSlug} />
+              <ZoneManager
+                lgus={lgus}
+                zones={zones}
+                scopeSlug={scopeSlug}
+                placeSearch={placeSearch}
+              />
             </div>
             {tab === "routes" ? (
               <div className={styles.routes}>

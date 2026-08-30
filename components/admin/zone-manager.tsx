@@ -11,6 +11,7 @@ import {
 
 import styles from "@/components/admin/zone-manager.module.css"
 import { FloodMap, type MapPoint } from "@/components/map/flood-map"
+import { PlaceSearch } from "@/components/submit/place-search"
 import { useLanguage } from "@/components/providers/language-provider"
 import { useSocketEvent } from "@/components/providers/socket-provider"
 import { showToast } from "@/components/toast"
@@ -28,6 +29,7 @@ import {
 import { api } from "@/lib/client-api"
 import {
   PICKER_ZOOM,
+  PLACE_ZOOM,
   PROVINCE_CENTER,
   PROVINCE_ZOOM,
   ZONE_COLOR,
@@ -50,10 +52,12 @@ export function ZoneManager({
   lgus,
   zones: serverZones,
   scopeSlug,
+  placeSearch,
 }: {
   lgus: LguDto[]
   zones: ZoneDto[]
   scopeSlug: string
+  placeSearch: boolean
 }) {
   const { t } = useLanguage()
   const [live, setLive] = React.useState<LiveZones>(() => new Map())
@@ -174,6 +178,7 @@ export function ZoneManager({
           lgus={lgus}
           zones={zones}
           scopeSlug={scopeSlug}
+          placeSearch={placeSearch}
           onClose={() => setDialog(null)}
           onSaved={(zone) => {
             apply(zone.id, zone)
@@ -191,6 +196,7 @@ function ZoneDialog({
   lgus,
   zones,
   scopeSlug,
+  placeSearch,
   onClose,
   onSaved,
 }: {
@@ -198,6 +204,7 @@ function ZoneDialog({
   lgus: LguDto[]
   zones: ZoneDto[]
   scopeSlug: string
+  placeSearch: boolean
   onClose: () => void
   onSaved: (zone: ZoneDto) => void
 }) {
@@ -220,6 +227,10 @@ function ZoneDialog({
     zone?.contactPhone ?? ""
   )
   const [saving, setSaving] = React.useState(false)
+  // The picker camera, moved only by a search hit. See FloodMap's `flyTo`.
+  const [flyTo, setFlyTo] = React.useState<
+    (MapPoint & { zoom: number }) | null
+  >(null)
 
   const area = lgus.find((lgu) => lgu.slug === lguSlug)
   const focus = React.useMemo(
@@ -370,6 +381,24 @@ function ZoneDialog({
 
         <div className={styles.field}>
           <span className={styles.label}>{t.submit.where}</span>
+          <PlaceSearch
+            lgus={lgus}
+            remote={placeSearch}
+            onSelect={(place) => {
+              setPoint({ lat: place.lat, lng: place.lng })
+              setFlyTo({
+                lat: place.lat,
+                lng: place.lng,
+                zoom: PLACE_ZOOM[place.kind],
+              })
+              // Switched silently here, unlike the resident form, which has to
+              // announce it: the officer is looking straight at the area select
+              // in this same dialog. The name is deliberately NOT autofilled -
+              // a shelter has an official name, and "Guagua Public Market" is
+              // not it.
+              if (place.area) setLguSlug(place.area)
+            }}
+          />
           <div className={styles.map}>
             <FloodMap
               mode="picker"
@@ -378,6 +407,7 @@ function ZoneDialog({
               zones={zones}
               labels={false}
               pickedPoint={point}
+              flyTo={flyTo}
               onPick={setPoint}
             />
           </div>

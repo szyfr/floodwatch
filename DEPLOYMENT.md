@@ -891,7 +891,7 @@ Expect ≤ 10 active/idle from the app. If you see ~20, you have two pools and t
 
 `max_connections = 50` is chosen for headroom, not because the app needs it. Exhausting it surfaces as `FATAL: sorry, too many clients already` (SQLSTATE 53300) in the app's journal.
 
-**Single process is the supported shape.** Do not scale this out by running a second app process against the same database - the Socket.io registry lives in one process's memory with no Redis adapter, so a second process silently halves your realtime fan-out. That constraint is about realtime, not the database, but it is why `max_connections` will never need to grow.
+**Single process is the supported shape.** Do not scale this out by running a second app process against the same database - the Socket.io registry lives in one process's memory with no Redis adapter, so a second process silently halves your realtime fan-out. `lib/server/rate-limit.ts` rests on the same guarantee: its counters are per process, so a second instance silently doubles every place-search limit and halves the geocode cache hit rate. That constraint is about realtime, not the database, but it is why `max_connections` will never need to grow.
 
 ### Verifying connectivity as the app user
 
@@ -1202,6 +1202,9 @@ These are all the variables the code actually reads:
 | `S3_BUCKET` | `lib/server/uploads.ts` | Optional. Unset = photos on local disk under `var/uploads`. Set it and photos go to S3 instead; the public URL stays `/uploads/<uuid>.<ext>` either way. |
 | `REKOGNITION_MODERATION` | `lib/server/moderation.ts` | Optional. `on` enables photo moderation; anything else disables it. Requires `S3_BUCKET`. Fails open by design. |
 | `REKOGNITION_ALLOW_CATEGORIES` | `lib/server/moderation.ts` | Comma-separated top-level categories to let through. Empty means block everything Rekognition flags - including `Visually Disturbing`, which covers injuries and wreckage and will reject legitimate flood photos. |
+| `GEOCODE_PROVIDER` | `lib/server/geocode.ts` | Optional. Defaults to `photon`. `off` disables place search entirely - the picker's search box then offers only the twenty-two areas and makes no outbound requests. |
+| `GEOCODE_BASE_URL` | `lib/server/geocode.ts` | Optional. Defaults to the public Photon instance. Point it at a self-hosted Photon with a Philippines extract if the public one throttles this box. |
+| `GEOCODE_TIMEOUT_MS` | `lib/server/geocode.ts` | Optional, default `4000`. A hung geocoder must not hold a route open; on timeout the search answers 502 and the map picker carries the reporter. |
 | `AWS_REGION` | AWS SDK | Only with `S3_BUCKET`. Credentials come from the EC2 instance role via IMDS - never put AWS keys in `.env`. |
 | `NODE_ENV` | `server.ts`, `lib/db.ts`, `lib/auth/token.ts` | `production`. Set by the `start` script / systemd unit - leave it out of `.env`. |
 | `SEED_ADMIN_PASSWORD` | `prisma/seed-data.ts` | Seed only. Pass it inline for one command; **never** put it in `.env`. |

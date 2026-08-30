@@ -1,0 +1,74 @@
+/* "Use my location" - the GPS half of the picker, above the map. */
+
+/* CSS Modules rewrite every animation name they see, so a bare
+   `animation: fw-spin` would point at a local keyframe that does not exist.
+   Custom-property values are left alone, so the global frames in
+   styles/tokens.css are reached through `--fw-anim`. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Quieter than the send button and squarer than the search field: this is an
+   offer, not the primary action, and the map underneath is still the one path
+   that always works. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--fw-bg);
+  border: 1px solid var(--fw-border);
+  border-radius: var(--fw-radius-md);
+  box-shadow: var(--fw-shadow-xs);
+  font: 500 14px/20px var(--fw-font-sans);
+  color: var(--fw-fg);
+  cursor: pointer;
+  transition:
+    background-color 120ms var(--fw-ease),
+    border-color 120ms var(--fw-ease);
+}
+.button:hover {
+  background: var(--fw-bg-muted);
+}
+.button:focus-visible {
+  border-color: var(--fw-border-strong);
+  outline: none;
+  box-shadow:
+    var(--fw-shadow-xs),
+    0 0 0 3px rgba(10, 10, 10, 0.08);
+}
+
+.spinner {
+  flex: none;
+  --fw-anim: fw-spin;
+  animation: var(--fw-anim) 700ms linear infinite;
+}
+
+/* A live region, so it stays mounted and empties rather than unmounting. That
+   rules out `display: none`, which would take it back out of the accessibility
+   tree between announcements. An empty span is already zero-height; all that is
+   left to reclaim is the 6px gap above it. */
+.note {
+  font: 400 12px/16px var(--fw-font-sans);
+  color: var(--fw-fg-muted);
+}
+.note:empty {
+  margin-top: -6px;
+}
+
+/* Neither of these is a form error, so neither borrows the red the three
+   inline errors own. A rough fix is the amber the form already uses for "the
+   app did something on your behalf"; a failure is the deeper amber, because
+   the reporter has a next step and it is spelled out in the sentence. */
+.noteRough {
+  color: var(--fw-amber-fg-soft);
+}
+.noteBad {
+  color: var(--fw-amber-fg);
+}

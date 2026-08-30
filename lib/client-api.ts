@@ -9,6 +9,7 @@ import type {
   ManagedUserDto,
   ManageReportsDto,
   ManageUsersDto,
+  PlacesDto,
   ReportDto,
   SessionUserDto,
   VoteValue,
@@ -184,6 +185,13 @@ export const api = {
 
   dismissAlert: (id: string) =>
     request<{ ok: true }>(`/api/alerts/${id}/dismiss`, { method: "POST" }),
+
+  /**
+   * Place search for the picker. `init` is threaded so a typeahead can abort
+   * the request the previous keystroke started.
+   */
+  places: (q: string, lang: string, init?: RequestInit) =>
+    request<PlacesDto>(`/api/places${query({ q, lang })}`, init),
 
   zones: (lgu?: string | null) =>
     request<{ zones: ZoneDto[] }>(`/api/zones${query({ lgu })}`),

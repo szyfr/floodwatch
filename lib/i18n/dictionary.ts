@@ -325,6 +325,36 @@ export const en = {
     ack: "I understand",
     see: "Show safe zones",
   },
+  placeSearch: {
+    label: "Search for a place",
+    placeholder: "Barangay, street or landmark",
+    searching: "Searching…",
+    empty: "No place found",
+    emptySub: "Try a barangay or a landmark, or tap the map to drop your pin.",
+    error: "Search is not answering - tap the map to drop your pin.",
+    offline: "Search needs a signal - tap the map to drop your pin instead.",
+    areas: "Cities and municipalities",
+    places: "Places",
+    clear: "Clear search",
+    attribution: "Search by Photon, data from OpenStreetMap contributors",
+    movedArea: "Area set to {area} from your search.",
+  },
+  locate: {
+    button: "Use my location",
+    locating: "Getting your location…",
+    found: "Location found - check the pin.",
+    rough: "Rough fix, about {distance} off - check the pin before you send.",
+    denied:
+      "Location is blocked for this site. Allow it in your browser, or tap the map to drop your pin.",
+    unavailable:
+      "Your phone could not find a location. Tap the map to drop your pin.",
+    timeout:
+      "GPS is still searching. Move somewhere with a clear view of the sky, or tap the map.",
+    insecure:
+      "Location needs a secure (https) connection. Tap the map to drop your pin.",
+    unsupported:
+      "This browser cannot share a location. Tap the map to drop your pin.",
+  },
   map: {
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
@@ -670,6 +700,41 @@ export const tl: Dictionary = {
     kicker: "Utos na lumikas",
     ack: "Naiintindihan ko",
     see: "Ipakita ang safe zones",
+  },
+  placeSearch: {
+    label: "Maghanap ng lugar",
+    placeholder: "Barangay, kalye o palatandaan",
+    searching: "Naghahanap…",
+    empty: "Walang lugar na nahanap",
+    emptySub:
+      "Subukan ang barangay o palatandaan, o i-tap ang mapa para maglagay ng pin.",
+    error:
+      "Hindi tumutugon ang paghahanap - i-tap ang mapa para maglagay ng pin.",
+    offline:
+      "Kailangan ng signal para maghanap - i-tap na lang ang mapa para maglagay ng pin.",
+    areas: "Mga lungsod at bayan",
+    places: "Mga lugar",
+    clear: "Burahin ang hinanap",
+    attribution:
+      "Paghahanap mula sa Photon, datos mula sa OpenStreetMap contributors",
+    movedArea: "Naitakda ang lugar sa {area} mula sa hinanap mo.",
+  },
+  locate: {
+    button: "Gamitin ang lokasyon ko",
+    locating: "Kinukuha ang lokasyon mo…",
+    found: "Nakuha ang lokasyon - tingnan ang pin.",
+    rough:
+      "Tantiya lang, mga {distance} ang layo - tingnan ang pin bago ipadala.",
+    denied:
+      "Naka-block ang lokasyon para sa site na ito. Payagan ito sa browser mo, o i-tap ang mapa para maglagay ng pin.",
+    unavailable:
+      "Hindi makuha ng telepono mo ang lokasyon. I-tap ang mapa para maglagay ng pin.",
+    timeout:
+      "Naghahanap pa ang GPS. Pumunta sa lugar na aliwalas ang langit, o i-tap ang mapa.",
+    insecure:
+      "Kailangan ng secure (https) na koneksyon para sa lokasyon. I-tap ang mapa para maglagay ng pin.",
+    unsupported:
+      "Hindi kayang magbahagi ng lokasyon ang browser na ito. I-tap ang mapa para maglagay ng pin.",
   },
   map: {
     zoomIn: "Mag-zoom in",

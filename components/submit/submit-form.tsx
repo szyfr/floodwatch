@@ -12,6 +12,8 @@ import {
 import { FloodMap, type MapPoint } from "@/components/map/flood-map"
 import { useLanguage } from "@/components/providers/language-provider"
 import { LevelPicker } from "@/components/submit/level-picker"
+import { LocateButton } from "@/components/submit/locate-button"
+import { PlaceSearch } from "@/components/submit/place-search"
 import {
   PhotoUpload,
   type AttachedPhoto,
@@ -35,10 +37,12 @@ import { api, ApiRequestError } from "@/lib/client-api"
 import {
   DESCRIPTION_MAX,
   PICKER_ZOOM,
+  PLACE_ZOOM,
   PROVINCE_CENTER,
+  zoomForAccuracy,
   type WaterLevel,
 } from "@/lib/domain"
-import type { LguDto, ReportDto, ZoneDto } from "@/lib/dto"
+import type { LguDto, PlaceDto, ReportDto, ZoneDto } from "@/lib/dto"
 import type { UpdateReportInput } from "@/lib/validation"
 
 /** The design shows exactly three inline errors; everything else is a toast. */
@@ -102,12 +106,18 @@ export function SubmitForm({
   report,
   presetLguSlug,
   defaultLguSlug,
+  placeSearch,
 }: {
   lgus: LguDto[]
   /** Non-null in edit mode - the viewer's own report, prefilled. */
   report: ReportDto | null
   presetLguSlug: string | null
   defaultLguSlug: string
+  /**
+   * False when the server has no geocoder configured. The search box then
+   * offers only the twenty-two areas and never reaches the network.
+   */
+  placeSearch: boolean
 }) {
   const { t } = useLanguage()
   const router = useRouter()
@@ -151,6 +161,20 @@ export function SubmitForm({
   const [errors, setErrors] = React.useState<Errors>({})
   const [shakeAlt, setShakeAlt] = React.useState(false)
   const [sending, setSending] = React.useState(false)
+  // Where a search hit asked the picker to fly. FloodMap keys this on object
+  // identity, so a fresh object is what moves the camera and null leaves the
+  // area-derived `focus` in charge. `focus` cannot do this job: it follows the
+  // area select, so a hit inside the already-selected town carries identical
+  // numbers and the map would sit still with the new pin off screen.
+  const [flyTo, setFlyTo] = React.useState<
+    (MapPoint & { zoom: number }) | null
+  >(null)
+  /** Area name, when a search moved the select. Shown, never silent. */
+  const [areaNote, setAreaNote] = React.useState<string | null>(null)
+  /** Bumped by resetForm; it is the search box's key, so a reset remounts it. */
+  const [formSeq, setFormSeq] = React.useState(0)
+  /** The location name a search last filled in, so a later pick may replace it. */
+  const filledName = React.useRef<string | null>(null)
 
   // One id per form session: it makes both the online POST and a queued retry
   // idempotent, so a lost response cannot become two reports.
@@ -165,6 +189,15 @@ export function SubmitForm({
     setLng("")
     setPhoto(null)
     setErrors({})
+    filledName.current = null
+    setFlyTo(null)
+    setAreaNote(null)
+    // The sequence number is the search box's key, so remounting clears its
+    // query, its results and its in-flight request without giving it a
+    // controlled API nobody else wants. This list is enumerated by hand and it
+    // runs on the offline queue-and-continue path below, so anything left out
+    // leaks a live result list over the next, blank report.
+    setFormSeq((n) => n + 1)
   }, [])
 
   // Safe zones give the picker map the same landmarks the dashboard shows.
@@ -206,6 +239,71 @@ export function SubmitForm({
     setLat(next.lat.toFixed(5))
     setLng(next.lng.toFixed(5))
     clearError("pin")
+  }
+
+  /**
+   * A searched place.
+   *
+   * A street or a landmark goes through pickPoint exactly as a map tap does, so
+   * the five-decimal rounding stays the one changesFor() compares against, and
+   * the camera moves through `flyTo` rather than `focus`, which follows the
+   * area select and also anchors the area ring.
+   *
+   * A whole town does NOT drop a pin. Its coordinates are a centroid - the
+   * local rows are the seeded ones, several rounded to two or three decimals,
+   * about a kilometre of slack - and "Candaba" is not a location name a
+   * neighbour can navigate by. Pinning the middle of a municipality would look
+   * like an answer while being useless to whoever reads the report, so a town
+   * row does what the reporter actually meant by picking it: takes them there
+   * and leaves the pin to them.
+   */
+  function pickPlace(place: PlaceDto) {
+    const town = place.kind === "area"
+
+    setFlyTo({ lat: place.lat, lng: place.lng, zoom: PLACE_ZOOM[place.kind] })
+
+    // The area follows the place, and says so. Filing a Candaba pin under San
+    // Fernando is a data error the reporter cannot see: the area is what the
+    // report is stored against, and it is where the redirect below sends them
+    // afterwards. A visible note is the honest half of deciding for them.
+    const next = place.area
+      ? lgus.find((lgu) => lgu.slug === place.area)
+      : undefined
+    if (next && next.slug !== lguSlug) {
+      setLguSlug(next.slug)
+      setAreaNote(next.name)
+    }
+
+    if (town) return
+
+    pickPoint(place)
+
+    // Never overwrite what the reporter typed themselves, but a second pick
+    // does replace what a first pick filled in - otherwise correcting a
+    // mis-tapped result moves the pin and leaves the wrong name beside it.
+    // The label arrives bounded to 2..160 by the geocode adapter, which is
+    // exactly what createReportSchema.locationName accepts.
+    const current = locationName.trim()
+    if (!current || current === filledName.current) {
+      filledName.current = place.label
+      setLocationName(place.label)
+      clearError("name")
+    }
+  }
+
+  /**
+   * A GPS fix. It lands through pickPoint like a map tap, and for the same
+   * reason it does not touch the area select: a coordinate names no
+   * municipality, and guessing the nearest of twenty-two centroids is wrong
+   * exactly at the boundaries where flooding gets reported.
+   *
+   * The zoom carries the accuracy. A 500m fix flown to street level would draw
+   * a confident pin on a corner the phone never identified, and the reporter
+   * cannot correct what the map does not show them is uncertain.
+   */
+  function locatePoint(next: MapPoint, accuracyMetres: number) {
+    pickPoint(next)
+    setFlyTo({ ...next, zoom: zoomForAccuracy(accuracyMetres) })
   }
 
   /** Only what the author actually touched, so an untouched field is left alone. */
@@ -337,6 +435,18 @@ export function SubmitForm({
       <div className={styles.card}>
         <div className={`${styles.section} ${styles.sectionWhere}`}>
           <span className={styles.label}>{t.submit.where}</span>
+          <PlaceSearch
+            key={formSeq}
+            lgus={lgus}
+            remote={placeSearch}
+            onSelect={pickPlace}
+          />
+          <LocateButton
+            key={`locate-${formSeq}`}
+            lat={lat}
+            lng={lng}
+            onLocate={locatePoint}
+          />
           <div
             className={`${styles.mapBox} ${errors.pin ? styles.mapBoxError : ""}`}
           >
@@ -347,6 +457,7 @@ export function SubmitForm({
               zones={zones}
               labels={false}
               pickedPoint={point}
+              flyTo={flyTo}
               onPick={pickPoint}
             />
           </div>
@@ -397,6 +508,8 @@ export function SubmitForm({
             value={lguSlug}
             onValueChange={(value) => {
               if (value) setLguSlug(value)
+              // Once the reporter sets the area themselves, the note is a lie.
+              setAreaNote(null)
             }}
           >
             <SelectTrigger
@@ -420,6 +533,16 @@ export function SubmitForm({
               ))}
             </SelectContent>
           </Select>
+          {/* Mounted from the start with its text swapped in, not mounted
+              together with it: a polite live region that appears in the same
+              commit as its content is announced unreliably, and this is the
+              only signal that a search just changed which area the report
+              will be filed under. `:empty` collapses the gap. */}
+          <span className={styles.areaNote} role="status">
+            {areaNote
+              ? t.placeSearch.movedArea.replace("{area}", areaNote)
+              : ""}
+          </span>
         </div>
 
         <div className={styles.section}>
