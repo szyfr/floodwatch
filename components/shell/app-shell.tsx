@@ -48,11 +48,19 @@ export function AppShell({
   user,
   initialAlerts,
   lgus,
+  vapidPublicKey,
   children,
 }: {
   user: SessionUserDto | null
   initialAlerts: AlertDto[]
   lgus: LguDto[]
+  /**
+   * Read per request in the layout and threaded down, rather than exposed as a
+   * NEXT_PUBLIC_ variable: that would be inlined at `next build`, and a build
+   * does not run server.ts, so setting it only in the systemd unit would hand
+   * the browser undefined. Null turns the whole feature off in the UI.
+   */
+  vapidPublicKey: string | null
   children: React.ReactNode
 }) {
   const { t, lang } = useLanguage()
@@ -331,6 +339,9 @@ export function AppShell({
         user={user}
         items={navItems}
         currentKey={section}
+        lgus={lgus}
+        vapidPublicKey={vapidPublicKey}
+        scopeSlug={scopeSlug}
       />
 
       <AreaSheet

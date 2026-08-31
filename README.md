@@ -167,6 +167,39 @@ reconcile those against their own session.
 Do not add a route under `/ws`: engine.io claims that path by prefix, and a
 matching App Router route makes Next close the upgrade before the handshake.
 
+## Push notifications
+
+Socket.io only reaches a tab that is already open. Web Push reaches a phone with
+the app closed, which is the point: an evacuation order at 2am is worth nothing
+if it waits for someone to open the app.
+
+Opting in stores a `PushSubscription` row keyed by the browser's push endpoint,
+carrying one area so targeting needs no join. Broadcasting writes a
+`PushDispatch` row in the same transaction as the `Alert`, returns 201, and runs
+the fan-out from `after()`. Alerts at priority `LOW` do not push - that is the
+whole of the channel-preservation policy, applied once on the server rather than
+as twenty-two settings a resident has to tune before an order reaches them.
+
+The service worker is a route handler at `app/sw.js/route.ts`, serving the
+source authored in `worker/sw.js`. It is deliberately not a file in `public/`:
+`headers()` in `next.config.ts` does not apply to public assets, so the worker
+would ship as `public, max-age=0` and invite the edge to cache it, and Next
+indexes `public/` once at startup so a newly added worker would 404 until the
+next restart. It has no `fetch` handler and caches nothing - a precached shell
+is how an app ends up serving yesterday's flood map to someone standing in
+today's water.
+
+Reach is not uniform, and the UI says so rather than pretending otherwise.
+Android Chrome works in an ordinary tab. iOS needs 16.4+ **and** the site added
+to the home screen before `Notification` and `PushManager` exist at all, so the
+opt-in card renders the Add to Home Screen steps instead of a dead button. Push
+is strictly additive: the alert banner, the alerts list and the critical gate
+are untouched by it being off, and every failure message names one of them.
+
+Delivery is at-least-once. A duplicate is collapsed on the handset by a
+notification tag carrying the alert id; a dropped evacuation order has no such
+remedy.
+
 ## Offline
 
 Reports written with no connection are parked in `localStorage` and flushed as

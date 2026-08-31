@@ -3,6 +3,7 @@
 import * as React from "react"
 
 import { LanguageProvider } from "@/components/providers/language-provider"
+import { PushProvider } from "@/components/providers/push-provider"
 import { SessionProvider } from "@/components/providers/session-provider"
 import { SocketProvider } from "@/components/providers/socket-provider"
 import type { SessionUserDto } from "@/lib/dto"
@@ -20,7 +21,9 @@ export function AppProviders({
   return (
     <SessionProvider user={user}>
       <LanguageProvider initialLanguage={initialLanguage}>
-        <SocketProvider>{children}</SocketProvider>
+        <SocketProvider>
+          <PushProvider>{children}</PushProvider>
+        </SocketProvider>
       </LanguageProvider>
     </SessionProvider>
   )

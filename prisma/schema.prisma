@@ -94,6 +94,7 @@ model Lgu {
   gauges     RiverGauge[]
   alertAreas AlertArea[]
   routes     EvacuationRoute[]
+  pushSubs   PushSubscription[]
 
   @@index([name])
 }
@@ -119,6 +120,7 @@ model User {
   alertDismissals AlertDismissal[]
   zones           SafeZone[]
   routes          EvacuationRoute[]
+  pushSubs        PushSubscription[]
 
   @@index([lguId])
 }
@@ -191,6 +193,11 @@ model Alert {
   /// Office shown to residents, e.g. "PDRRMO Pampanga".
   sentBy    String
   authorId  String?
+  /// Idempotency key from the broadcast form. A double-tapped Broadcast was
+  /// only untidy while alerts stayed on screen; it rings every phone in the
+  /// province twice now, and two ids will not collapse under one notification
+  /// tag. Same pattern as FloodReport.clientId.
+  clientId  String?
   active    Boolean       @default(true)
   expiresAt DateTime?
   createdAt DateTime      @default(now())
@@ -199,7 +206,9 @@ model Alert {
   author     User?            @relation(fields: [authorId], references: [id], onDelete: SetNull)
   areas      AlertArea[]
   dismissals AlertDismissal[]
+  dispatch   PushDispatch?
 
+  @@unique([authorId, clientId])
   @@index([createdAt(sort: Desc)])
   @@index([active])
 }
@@ -306,4 +315,78 @@ model EvacuationRoute {
   createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([lguId])
+}
+
+/// A Web Push subscription: one browser profile on one device. The DEVICE is
+/// the subscriber, not the account - a resident who never signs in still gets
+/// evacuation orders, and someone carrying a phone and a barangay tablet tunes
+/// each of them separately.
+model PushSubscription {
+  id           String   @id @default(cuid())
+  /// The push service's URL, and the only identity this table has. Unique on
+  /// its own and never paired with userId: Postgres treats NULLs as distinct,
+  /// so an anonymous device would duplicate freely. Clearing site data mints a
+  /// new endpoint and the old one starts answering 410. Checked against
+  /// lib/push/endpoints.ts before it is stored, because this column is a URL
+  /// the server POSTs to on every broadcast.
+  endpoint     String   @unique
+  /// RFC 8291 key material from PushSubscription.getKey(), base64url. With the
+  /// endpoint these are a bearer capability, so they never reach a DTO.
+  p256dh       String
+  auth         String
+  /// The one area this device wants area-targeted orders for. Required, not
+  /// nullable: an unaddressed row receives no AREAS broadcast at all, which is
+  /// exactly the shape a barangay evacuation order takes, and silence is the
+  /// one failure nobody thinks to report. Seeded from the session's home area
+  /// or the current `?lgu=`, and always shown in words on the drawer row.
+  lguId        String
+  /// Null for a device that has never signed in, and re-nullable, because
+  /// deleting an account must not quietly stop that handset hearing an order.
+  /// Same reasoning as FloodReport.authorId.
+  userId       String?
+  /// Interface language when this device last asserted itself. The service
+  /// worker cannot read the app's language store, so the body arrives already
+  /// written. Taken from the device's own store rather than User.language,
+  /// which is a best-effort fire-and-forget shadow.
+  language     String   @default("en")
+  /// Support only ("it stopped ringing after the phone updated").
+  userAgent    String?
+  /// Refreshed every time the app re-asserts this subscription. A row nobody
+  /// has re-asserted in months is a phone in a drawer.
+  lastSeenAt   DateTime @default(now())
+  /// Consecutive soft failures. PUSH_FAILURE_LIMIT retires the row and any
+  /// success resets it. A 404/410 skips this and deletes at once; a 401/403
+  /// never touches it, because that is our key being wrong, not their phone.
+  failureCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lgu  Lgu   @relation(fields: [lguId], references: [id], onDelete: Restrict)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([lguId])
+  @@index([userId])
+}
+
+/// One broadcast's fan-out. This is the whole of the "queue": a keyset cursor
+/// and a finished flag. There is no job library here for the same reason there
+/// is no Redis - one process, on purpose (DEPLOYMENT.md).
+model PushDispatch {
+  id         String    @id @default(cuid())
+  alertId    String    @unique
+  /// Last PushSubscription.id attempted. Paging is keyset on the primary key,
+  /// so a resume after a restart cannot ring anyone the first pass covered.
+  cursor     String?
+  matched    Int       @default(0)
+  delivered  Int       @default(0)
+  /// Endpoints that answered 404 or 410 and were deleted. Not a failure - a
+  /// phone that was wiped, or an app someone uninstalled.
+  gone       Int       @default(0)
+  failed     Int       @default(0)
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([finishedAt])
 }

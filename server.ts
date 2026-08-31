@@ -11,6 +11,7 @@ import "dotenv/config"
 import next from "next"
 import { Server as SocketIOServer } from "socket.io"
 
+import { stopDispatching } from "./lib/push/state"
 import { SOCKET_PATH } from "./lib/realtime/events"
 import { registerSocketServer } from "./lib/realtime/registry"
 import { attachSocketHandlers } from "./lib/realtime/handlers"
@@ -53,6 +54,11 @@ httpServer.listen(port, hostname, () => {
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
+    // Before app.close(), which awaits pending after() work: the push
+    // dispatcher checks this between sends, so the page in flight finishes and
+    // writes its cursor. Skip it and a province-wide fan-out holds the process
+    // past TimeoutStopSec and gets SIGKILLed mid-send instead.
+    stopDispatching()
     io.close()
     httpServer.close()
     void app.close().finally(() => process.exit(0))

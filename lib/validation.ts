@@ -213,6 +213,7 @@ export const createAlertSchema = z
     scope: z.enum(["PROVINCE", "AREAS"]),
     areas: z.array(slug).default([]),
     expiresAt: z.iso.datetime().optional().nullable(),
+    clientId: z.string().trim().max(64).optional(),
   })
   .refine((v) => v.scope === "PROVINCE" || v.areas.length > 0, {
     message: "errAreas",
@@ -259,6 +260,30 @@ export const languageSchema = z.object({
   language: z.enum(["en", "tl"], { error: "errLanguage" }),
 })
 
+// A push endpoint is a URL this server POSTs to on every broadcast, so the
+// length bound here is only the first gate - lib/push/endpoints.ts decides
+// whether the host is one we will actually talk to.
+const pushEndpoint = z.string().trim().max(2048).pipe(z.url())
+
+export const pushSubscribeSchema = z.object({
+  endpoint: pushEndpoint,
+  p256dh: z.string().trim().min(1).max(256),
+  auth: z.string().trim().min(1).max(256),
+  // Optional only so the service worker's pushsubscriptionchange handler can
+  // rotate an endpoint without one: a worker cannot read the app's stores, and
+  // the route inherits the area from the row being replaced instead of letting
+  // the worker guess and silently re-target the device. Every other caller
+  // must send it, which the route enforces.
+  lgu: slug.optional(),
+  language: z.enum(["en", "tl"], { error: "errLanguage" }).optional(),
+  userAgent: z.string().trim().max(400).optional(),
+  // Set by the service worker's pushsubscriptionchange handler, so the row it
+  // replaces is removed in the same call rather than waiting for a 410.
+  previousEndpoint: pushEndpoint.optional(),
+})
+
+export const pushEndpointSchema = z.object({ endpoint: pushEndpoint })
+
 export type SignUpInput = z.infer<typeof signUpSchema>
 export type SignInInput = z.infer<typeof signInSchema>
 export type CreateReportInput = z.infer<typeof createReportSchema>
@@ -271,6 +296,8 @@ export type ManageUserQuery = z.infer<typeof manageUserQuerySchema>
 export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
+export type PushSubscribeInput = z.infer<typeof pushSubscribeSchema>
+export type PushEndpointInput = z.infer<typeof pushEndpointSchema>
 
 /** Flattens a ZodError into the `{ field: messageKey }` the forms expect. */
 export function fieldErrors(error: z.ZodError): Record<string, string> {

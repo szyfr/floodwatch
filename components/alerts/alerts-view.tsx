@@ -16,8 +16,9 @@ import {
   getServerDismissed,
   subscribeDismissed,
 } from "@/lib/alerts-store"
+import { PushInvite } from "@/components/push/push-invite"
 import { api } from "@/lib/client-api"
-import type { AlertDto } from "@/lib/dto"
+import type { AlertDto, LguDto } from "@/lib/dto"
 
 /** Mirrors the server-side scope filter in `listAlerts`. */
 function inScope(alert: AlertDto, scopeSlug: string | null): boolean {
@@ -29,10 +30,16 @@ export function AlertsView({
   alerts,
   scopeSlug,
   signedIn,
+  lgus,
+  vapidPublicKey,
+  homeLgu,
 }: {
   alerts: AlertDto[]
   scopeSlug: string | null
   signedIn: boolean
+  lgus: LguDto[]
+  vapidPublicKey: string | null
+  homeLgu: string | null
 }) {
   const { t } = useLanguage()
   const router = useRouter()
@@ -96,6 +103,12 @@ export function AlertsView({
           <span className={styles.subtitle}>{t.alerts.sub}</span>
         </div>
       </div>
+
+      <PushInvite
+        vapidPublicKey={vapidPublicKey}
+        lgus={lgus}
+        defaultLgu={homeLgu ?? scopeSlug}
+      />
 
       {visible.length > 0 ? (
         <ul className={styles.list}>

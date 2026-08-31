@@ -37,6 +37,17 @@ type Errors = { title: boolean; areas: boolean }
 
 const NO_ERRORS: Errors = { title: false, areas: false }
 
+/**
+ * `crypto.randomUUID` is only defined in a secure context, and a DRRM desk may
+ * well reach a staging box over plain HTTP. Same fallback as submit-form.tsx.
+ */
+function newClientId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID()
+  }
+  return `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
+}
+
 export function BroadcastForm({ lgus }: { lgus: LguDto[] }) {
   const { t } = useLanguage()
   const fieldId = React.useId()
@@ -48,6 +59,11 @@ export function BroadcastForm({ lgus }: { lgus: LguDto[] }) {
   const [scope, setScope] = React.useState<AlertScope>("PROVINCE")
   // Selection order, so the reach line reads back in the order they were picked.
   const [areas, setAreas] = React.useState<string[]>([])
+  // Rotated after every successful send, so the next broadcast is a new alert
+  // while a retry of THIS one collapses onto the row already written. A
+  // double-tap used to be untidy; it now rings every phone in the province
+  // twice, because two alert ids will not collapse under one notification tag.
+  const clientId = React.useRef<string>(newClientId())
   const [sending, setSending] = React.useState(false)
   const [errors, setErrors] = React.useState<Errors>(NO_ERRORS)
   // Alternating so a second failed submit re-runs the shake animation.
@@ -108,9 +124,11 @@ export function BroadcastForm({ lgus }: { lgus: LguDto[] }) {
         priority,
         scope,
         areas: scope === "AREAS" ? areas : [],
+        clientId: clientId.current,
       })
       // The type, priority and target survive: officers usually send several
       // alerts about the same event in a row.
+      clientId.current = newClientId()
       setTitle("")
       setMessage("")
       showToast(t.toast.bcast, t.toast.bcastSub, "ok")
@@ -315,6 +333,11 @@ export function BroadcastForm({ lgus }: { lgus: LguDto[] }) {
           {sending ? t.admin.sending : t.admin.send}
         </Button>
         <span className={styles.reach}>{reachLine}</span>
+        {/* Deliberately without a number. Lgu.registeredResidents above is
+            seeded data, and replacing one false count with a second one is not
+            the fix - a real subscriber count needs a delivery record this
+            first cut does not keep. */}
+        <span className={styles.reach}>{t.push.broadcastNote}</span>
       </div>
     </div>
   )

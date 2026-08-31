@@ -17,8 +17,9 @@ import {
 
 import styles from "@/components/shell/nav-drawer.module.css"
 import { LanguageToggle } from "@/components/shell/language-toggle"
+import { PushToggle } from "@/components/push/push-toggle"
 import { useLanguage } from "@/components/providers/language-provider"
-import type { SessionUserDto } from "@/lib/dto"
+import type { LguDto, SessionUserDto } from "@/lib/dto"
 
 export type DrawerItem = {
   key: string
@@ -34,6 +35,9 @@ export function NavDrawer({
   user,
   items,
   currentKey,
+  lgus,
+  vapidPublicKey,
+  scopeSlug,
 }: {
   open: boolean
   onClose: () => void
@@ -42,6 +46,9 @@ export function NavDrawer({
   user: SessionUserDto | null
   items: DrawerItem[]
   currentKey: string
+  lgus: LguDto[]
+  vapidPublicKey: string | null
+  scopeSlug: string | null
 }) {
   const { t } = useLanguage()
   const router = useRouter()
@@ -107,6 +114,17 @@ export function NavDrawer({
             <XIcon size={19} weight="bold" />
           </button>
         </div>
+
+        {vapidPublicKey ? (
+          <PushToggle
+            vapidPublicKey={vapidPublicKey}
+            lgus={lgus}
+            // The device rings for where the reader sleeps by default, not for
+            // whatever `?lgu=` they are browsing this minute - but the browse
+            // scope is the better guess for somebody who never signed in.
+            defaultLgu={user?.lguSlug ?? scopeSlug}
+          />
+        ) : null}
 
         <div className={styles.languageRow}>
           <GlobeIcon size={17} />

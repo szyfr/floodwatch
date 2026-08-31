@@ -1,0 +1,75 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: var(--fw-surface);
+  border: 1px solid var(--fw-line);
+  border-left: 3px solid var(--fw-accent, #2563eb);
+  border-radius: var(--fw-radius-md, 10px);
+  box-shadow: var(--fw-shadow-sm, 0 1px 2px rgb(15 23 42 / 6%));
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--fw-accent, #2563eb);
+}
+
+.copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fw-fg);
+}
+
+.body {
+  margin: 3px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fw-fg-muted);
+}
+
+.dismiss {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  color: var(--fw-fg-muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dismiss:hover {
+  background: var(--fw-surface-2, rgb(15 23 42 / 5%));
+}
+
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding-left: 30px;
+  font-size: 12px;
+  color: var(--fw-fg-muted);
+}
+
+.action {
+  padding-left: 30px;
+}

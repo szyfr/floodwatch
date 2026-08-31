@@ -3,7 +3,8 @@ import type { Metadata } from "next"
 import { AlertsView } from "@/components/alerts/alerts-view"
 import { getSessionUser } from "@/lib/auth/session"
 import { en } from "@/lib/i18n/dictionary"
-import { getLguBySlug, listAlerts } from "@/lib/server/queries"
+import { publicVapidKey } from "@/lib/push/vapid"
+import { getLguBySlug, listAlerts, listLgus } from "@/lib/server/queries"
 
 export const metadata: Metadata = { title: en.alerts.title }
 
@@ -24,7 +25,19 @@ export default async function AlertsPage({
   const lgu = scoped?.slug ?? null
 
   const user = await getSessionUser()
-  const alerts = await listAlerts(user?.id ?? null, lgu)
+  const [alerts, lgus] = await Promise.all([
+    listAlerts(user?.id ?? null, lgu),
+    listLgus(),
+  ])
 
-  return <AlertsView alerts={alerts} scopeSlug={lgu} signedIn={Boolean(user)} />
+  return (
+    <AlertsView
+      alerts={alerts}
+      scopeSlug={lgu}
+      signedIn={Boolean(user)}
+      lgus={lgus}
+      vapidPublicKey={publicVapidKey()}
+      homeLgu={user?.lguSlug ?? null}
+    />
+  )
 }

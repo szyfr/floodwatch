@@ -1009,6 +1009,54 @@ ls -lh /var/backups/floodwatch
 
 `Persistent=true` means a missed run (instance stopped overnight) fires on next boot.
 
+### The push resume sweep
+
+Only needed if push notifications are configured (`VAPID_*` in `.env`). It is what makes a restart mid-broadcast self-heal.
+
+A broadcast writes one `PushDispatch` row in the same transaction as the alert, and the fan-out runs off `after()`, which `app.close()` awaits on SIGTERM - so a normal `systemctl restart` finishes the page in flight and writes its cursor. What it cannot cover is a SIGKILL, an OOM, or a box that loses power mid-fan-out. This timer picks those up within a minute:
+
+```bash
+sudo tee /etc/systemd/system/floodwatch-push-sweep.service >/dev/null <<'UNIT'
+[Unit]
+Description=Resume any interrupted Floodwatch push fan-out
+After=floodwatch.service
+Requires=floodwatch.service
+
+[Service]
+Type=oneshot
+# The secret is read from the app's own .env rather than duplicated here, so
+# rotating it is one edit. EnvironmentFile does not export to the shell, hence
+# the explicit source.
+ExecStart=/bin/bash -c 'set -a; . /srv/floodwatch/.env; set +a; curl -fsS -m 30 -X POST -H "x-push-sweep-secret: $PUSH_SWEEP_SECRET" http://127.0.0.1:3000/api/internal/push/sweep'
+User=floodwatch
+Nice=10
+UNIT
+
+sudo tee /etc/systemd/system/floodwatch-push-sweep.timer >/dev/null <<'UNIT'
+[Unit]
+Description=Resume interrupted Floodwatch push fan-outs every minute
+
+[Timer]
+OnBootSec=45s
+OnUnitActiveSec=1min
+# A run missed across a reboot fires at boot, so an interrupted evacuation
+# order finishes within a minute of the box coming back.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now floodwatch-push-sweep.timer
+sudo systemctl start floodwatch-push-sweep.service   # run once now
+sudo journalctl -u floodwatch-push-sweep.service -n 20 --no-pager
+```
+
+The route answers `{"resumed":n}` and is a no-op when nothing is outstanding, so a once-a-minute poll costs one indexed query against `PushDispatch("finishedAt")`. It answers **404** to a wrong or missing secret, which is also what an unconfigured `PUSH_SWEEP_SECRET` produces - so if the timer logs a 404, check the variable before anything else.
+
+Two bounds worth knowing. A dispatch older than two hours is never resumed, so a box that was down for three days cannot wake the province on Friday with Tuesday's flood warning. And delivery is at-least-once by design: a push that was accepted but whose outcome was never recorded is sent again, and the duplicate is collapsed on the handset by the notification tag, which is the alert id. A duplicate evacuation order is an annoyance; a dropped one is a life.
+
 The dump takes no exclusive locks and will finish in seconds on a dataset this size, so if losing up to 24 hours of flood reports is unacceptable - and for this application it probably is - change `OnCalendar` to `hourly`. If you do, drop `KEEP_DAYS` (14 days at hourly cadence is ~336 dumps plus ~336 uploads tarballs) or switch the rotation to a count rather than an age. That is a cheap change; full WAL archiving and point-in-time recovery are deliberately out of scope for a single-instance deployment.
 
 **Off-box.** A backup on the same EBS volume as the database is not a backup. Add a sync step - this is the whole reason for the atomic `.part` rename above:
@@ -1205,6 +1253,10 @@ These are all the variables the code actually reads:
 | `GEOCODE_PROVIDER` | `lib/server/geocode.ts` | Optional. Defaults to `photon`. `off` disables place search entirely - the picker's search box then offers only the twenty-two areas and makes no outbound requests. |
 | `GEOCODE_BASE_URL` | `lib/server/geocode.ts` | Optional. Defaults to the public Photon instance. Point it at a self-hosted Photon with a Philippines extract if the public one throttles this box. |
 | `GEOCODE_TIMEOUT_MS` | `lib/server/geocode.ts` | Optional, default `4000`. A hung geocoder must not hold a route open; on timeout the search answers 502 and the map picker carries the reporter. |
+| `VAPID_PUBLIC_KEY` | `lib/push/vapid.ts` | Optional. Enables push notifications together with the two below. Read at **runtime**, not build time - deliberately not `NEXT_PUBLIC_`, so rotating it is a restart rather than a rebuild. Reaches the browser as a prop from `app/(app)/layout.tsx`. |
+| `VAPID_PRIVATE_KEY` | `lib/push/vapid.ts` | Optional. Never leaves the server. A wrong value makes every push service answer 401/403; the dispatcher aborts after 20 consecutive rejections and deletes nothing. |
+| `VAPID_SUBJECT` | `lib/push/vapid.ts` | Optional. `mailto:` or `https:` only - Apple's push service is strict and `web-push` validates it. |
+| `PUSH_SWEEP_SECRET` | `app/api/internal/push/sweep/route.ts` | Optional. Shared secret for the resume sweep timer. Without it the route answers 404 to everyone and an interrupted fan-out waits for the next broadcast. |
 | `AWS_REGION` | AWS SDK | Only with `S3_BUCKET`. Credentials come from the EC2 instance role via IMDS - never put AWS keys in `.env`. |
 | `NODE_ENV` | `server.ts`, `lib/db.ts`, `lib/auth/token.ts` | `production`. Set by the `start` script / systemd unit - leave it out of `.env`. |
 | `SEED_ADMIN_PASSWORD` | `prisma/seed-data.ts` | Seed only. Pass it inline for one command; **never** put it in `.env`. |
@@ -2121,8 +2173,8 @@ Do not add `add_header Cache-Control ...` in this server block. `add_header` app
 - **SSL/TLS → Edge Certificates → Always Use HTTPS: on.**
 - **Network → WebSockets: on.** Without it `/ws` never reaches the origin.
 - **Speed → Optimization → Rocket Loader: off.** It reorders script execution and breaks React hydration.
-- **Cache Rules:** bypass cache for `/api/*` and `/ws*`.
-- **Bot Fight Mode:** leave off, or verify sign-in and report submission still work - it can challenge the API's non-navigational POSTs.
+- **Cache Rules:** bypass cache for `/api/*`, `/ws*` and `/sw.js`. The service worker is served by a route handler with `no-store`, but the bypass rule is belt and braces: a stale worker at the edge is close to unrecoverable, because browsers keep running the old one and an old worker silently turns every evacuation order into nothing.
+- **Bot Fight Mode:** leave off, or verify sign-in and report submission still work - it can challenge the API's non-navigational POSTs. This now also covers `POST /api/push/subscription`, and a fetch from inside a service worker cannot solve a challenge, so a challenged re-registration fails silently with nothing on screen to say so.
 
 ### Locking the origin to Cloudflare
 

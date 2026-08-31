@@ -339,6 +339,48 @@ export const en = {
     attribution: "Search by Photon, data from OpenStreetMap contributors",
     movedArea: "Area set to {area} from your search.",
   },
+  push: {
+    label: "Phone alerts",
+    on: "On",
+    off: "Off",
+    onIn: "On for {area}",
+    checking: "Checking…",
+    busy: "Turning on…",
+    area: "Ring me for",
+    turnOn: "Turn on phone alerts",
+    turnOff: "Turn off",
+    test: "Send a test alert",
+    testSent: "Test alert sent - check your notifications.",
+    testFailed: "Could not send a test alert. Try turning alerts off and on again.",
+    enabled: "Phone alerts are on. You will be notified even with the app closed.",
+    disabled: "Phone alerts are off.",
+    // Every line below names something that still works: the alert banner, the
+    // alerts list and the critical gate are untouched by push being off.
+    unsupported:
+      "This browser cannot ring you. Open Flood Watch in Chrome, or keep this page open - alerts still show at the top of the screen.",
+    insecure:
+      "Phone alerts need a secure (https) connection. Alerts still show at the top of the screen.",
+    iosInstall: "On iPhone, alerts work only from the home screen app.",
+    iosSteps: "Tap Share, then Add to Home Screen, and open Flood Watch from there.",
+    denied:
+      "Alerts are blocked for this site. Allow notifications for Flood Watch in your browser settings, then try again.",
+    dismissed: "No answer yet - tap again when you are ready.",
+    timeout:
+      "Your phone did not answer. Try again, or check that notifications are allowed for your browser.",
+    noService:
+      "This phone cannot receive alerts from the internet. Keep Flood Watch open - the alert banner still works.",
+    network: "Could not reach the server. Alerts are still off - try again.",
+    inviteTitle: "Get flood alerts on your phone",
+    inviteBody:
+      "Evacuation orders and flood warnings reach you even when the app is closed.",
+    inviteAction: "Turn on",
+    inviteDismiss: "Not now",
+    broadcastNote: "Residents who turned on phone alerts also get a notification.",
+    // Returned by the subscribe endpoint when a device offers an endpoint on a
+    // host we will not POST to. No form renders it - the toggle maps its own
+    // failures - but the 422 contract says a field error names a copy key.
+    errEndpoint: "This device cannot be registered for alerts.",
+  },
   locate: {
     button: "Use my location",
     locating: "Getting your location…",
@@ -718,6 +760,49 @@ export const tl: Dictionary = {
     attribution:
       "Paghahanap mula sa Photon, datos mula sa OpenStreetMap contributors",
     movedArea: "Naitakda ang lugar sa {area} mula sa hinanap mo.",
+  },
+  push: {
+    label: "Alerto sa telepono",
+    on: "Naka-on",
+    off: "Naka-off",
+    onIn: "Naka-on para sa {area}",
+    checking: "Sinusuri…",
+    busy: "Binubuksan…",
+    area: "Alertuhan ako para sa",
+    turnOn: "Buksan ang alerto sa telepono",
+    turnOff: "Isara",
+    test: "Magpadala ng pansubok na alerto",
+    testSent: "Naipadala ang pansubok na alerto - tingnan ang mga notipikasyon mo.",
+    testFailed:
+      "Hindi naipadala ang pansubok na alerto. Subukang i-off at i-on muli ang alerto.",
+    enabled:
+      "Naka-on ang alerto sa telepono. Mababalitaan ka kahit nakasara ang app.",
+    disabled: "Naka-off ang alerto sa telepono.",
+    unsupported:
+      "Hindi ka kayang alertuhan ng browser na ito. Buksan ang Flood Watch sa Chrome, o iwang bukas ang pahinang ito - lumalabas pa rin ang alerto sa itaas ng screen.",
+    insecure:
+      "Kailangan ng secure (https) na koneksyon para sa alerto sa telepono. Lumalabas pa rin ang alerto sa itaas ng screen.",
+    iosInstall:
+      "Sa iPhone, gumagana lang ang alerto mula sa app na nasa home screen.",
+    iosSteps:
+      "I-tap ang Share, pagkatapos ang Add to Home Screen, at buksan ang Flood Watch mula roon.",
+    denied:
+      "Naka-block ang alerto para sa site na ito. Payagan ang mga notipikasyon para sa Flood Watch sa settings ng browser mo, tapos subukan muli.",
+    dismissed: "Wala pang sagot - i-tap muli kapag handa ka na.",
+    timeout:
+      "Hindi sumagot ang telepono mo. Subukan muli, o tingnan kung pinapayagan ang mga notipikasyon sa browser mo.",
+    noService:
+      "Hindi makatanggap ng alerto mula sa internet ang teleponong ito. Iwang bukas ang Flood Watch - gumagana pa rin ang banner ng alerto.",
+    network:
+      "Hindi maabot ang server. Naka-off pa rin ang alerto - subukan muli.",
+    inviteTitle: "Kumuha ng alerto sa baha sa telepono mo",
+    inviteBody:
+      "Naaabot ka ng utos na lumikas at babala sa baha kahit nakasara ang app.",
+    inviteAction: "Buksan",
+    inviteDismiss: "Sa susunod",
+    broadcastNote:
+      "May notipikasyon din ang mga residenteng binuksan ang alerto sa telepono.",
+    errEndpoint: "Hindi maipatala ang device na ito para sa mga alerto.",
   },
   locate: {
     button: "Gamitin ang lokasyon ko",
