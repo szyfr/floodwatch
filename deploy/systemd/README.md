@@ -26,10 +26,10 @@ with nothing to say so.
 
 ## Before it will work
 
-1. **Push is configured.** `grep -c PUSH_SWEEP_SECRET /srv/floodwatch/.env` → `1`.
+1. **Push is configured.** `grep -c PUSH_SWEEP_SECRET /var/www/floodwatch/.env` → `1`.
    Without it the route answers 404 to everyone, including this timer.
 2. **`.env` is readable by the service account.**
-   `ls -l /srv/floodwatch/.env` → `-rw------- floodwatch floodwatch`. The unit
+   `ls -l /var/www/floodwatch/.env` → `-rw------- floodwatch floodwatch`. The unit
    runs as `floodwatch` and sources the file to read the secret.
 3. **The app is up.** `systemctl is-active floodwatch` → `active`.
 

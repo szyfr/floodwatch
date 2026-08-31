@@ -21,7 +21,7 @@ certificate paths:
 | Domain | the public hostname | `floodwatch.example.ph` |
 | Admin IP | the address you SSH from | `203.0.113.7/32` |
 | Repo | your git remote | `git@github.com:szyfr/floodwatch.git` |
-| App directory | the checkout, and the unit's `WorkingDirectory` | `/srv/floodwatch` |
+| App directory | the checkout, and the unit's `WorkingDirectory` | `/var/www/floodwatch` |
 | Service account | OS user, its group, the DB role and the DB name | `floodwatch` |
 | Home | the service account's home, deliberately *not* the checkout | `/home/floodwatch` |
 
@@ -58,7 +58,7 @@ alongside the database.
 | App        | `tsx server.ts` under systemd, bound to `127.0.0.1:3000`  |
 | Realtime   | Socket.io on `/ws`, same port, same process                |
 | Database   | PostgreSQL on the same instance, loopback only             |
-| Uploads    | `/srv/floodwatch/var/uploads` on the EBS root volume       |
+| Uploads    | `/var/www/floodwatch/var/uploads` on the EBS root volume       |
 | Public edge| Cloudflare, proxying to nginx on 443 with a Cloudflare Origin CA cert |
 
 ```
@@ -67,7 +67,7 @@ visitor ──443──> Cloudflare edge ──443──> nginx ──> 127.0.0.
                                       │    Origin CA)                    node process
                                       └── /ws upgrade ──────────────────┘
                                                     127.0.0.1:5432 ──> PostgreSQL
-                                                    /srv/floodwatch/var/uploads
+                                                    /var/www/floodwatch/var/uploads
 ```
 
 TLS is terminated twice: once at Cloudflare with a browser-trusted certificate,
@@ -223,7 +223,7 @@ That is the complete ruleset:
 
 **Do not open 3000. Do not open 5432.** The Node server and PostgreSQL both bind loopback only and are reached exclusively through nginx and a Unix/localhost connection respectively. If you find yourself wanting to open 3000 to "test the app directly", you are about to discover the real reason it can't work: the session cookie is issued with `secure: true` whenever `NODE_ENV === "production"`, so a browser will silently refuse to store it over plain HTTP and sign-in will appear to fail with no error. Test through nginx and TLS or not at all.
 
-Back this up in the app's own configuration: put `HOSTNAME=127.0.0.1` in `/srv/floodwatch/.env` (created in the configuration section). `server.ts` reads `process.env.HOSTNAME ?? "localhost"` and passes it straight to `httpServer.listen(port, hostname)`, so setting it explicitly guarantees the listener never binds a public interface even if a security group rule is later edited by mistake. systemd injects no `HOSTNAME` of its own, so the `.env` value is what the process sees - but note that `dotenv/config` never overwrites a variable that is already in the environment, so do not also set `HOSTNAME` in the unit file. `.env` is the single source for it.
+Back this up in the app's own configuration: put `HOSTNAME=127.0.0.1` in `/var/www/floodwatch/.env` (created in the configuration section). `server.ts` reads `process.env.HOSTNAME ?? "localhost"` and passes it straight to `httpServer.listen(port, hostname)`, so setting it explicitly guarantees the listener never binds a public interface even if a security group rule is later edited by mistake. systemd injects no `HOSTNAME` of its own, so the `.env` value is what the process sees - but note that `dotenv/config` never overwrites a variable that is already in the environment, so do not also set `HOSTNAME` in the unit file. `.env` is the single source for it.
 
 ### Launching
 
@@ -378,25 +378,25 @@ Create a system user that owns the application and can neither log in remotely n
 # as: ubuntu (sudo)
 sudo adduser --system --group --home /home/floodwatch --shell /bin/bash floodwatch
 
-sudo install -d -o floodwatch -g floodwatch -m 0755 /srv/floodwatch
+sudo install -d -o floodwatch -g floodwatch -m 0755 /var/www/floodwatch
 
 id floodwatch
-ls -ld /home/floodwatch /srv/floodwatch
+ls -ld /home/floodwatch /var/www/floodwatch
 ```
 
 `--system` creates the account with its password field disabled, so there is no password to guess; `--shell /bin/bash` is still needed so `sudo -iu floodwatch` gives you a usable shell for builds and migrations.
 
-**The home directory is deliberately *not* the checkout.** `/home/floodwatch` holds bun's install cache (`~/.bun`) and the deploy key (`~/.ssh`); `/srv/floodwatch` holds only the git working tree. Keeping them apart means a `git clean -xdf` in the checkout cannot delete the SSH key that fetches it, and `git status` on the box stays readable.
+**The home directory is deliberately *not* the checkout.** `/home/floodwatch` holds bun's install cache (`~/.bun`) and the deploy key (`~/.ssh`); `/var/www/floodwatch` holds only the git working tree. Keeping them apart means a `git clean -xdf` in the checkout cannot delete the SSH key that fetches it, and `git status` on the box stays readable.
 
-> **Leave `/srv/floodwatch` empty until the deploy section clones into it.** `git clone` aborts with *"destination path already exists and is not an empty directory"* if there is so much as one dotfile in it. In particular, do **not** pre-create `var/uploads` here - the repo already tracks `var/uploads/.gitkeep`, so the clone brings the directory with it.
+> **Leave `/var/www/floodwatch` empty until the deploy section clones into it.** `git clone` aborts with *"destination path already exists and is not an empty directory"* if there is so much as one dotfile in it. In particular, do **not** pre-create `var/uploads` here - the repo already tracks `var/uploads/.gitkeep`, so the clone brings the directory with it.
 
 Immediately after the clone, tighten the mode git created:
 
 ```bash
 # as: ubuntu (sudo) - AFTER the deploy section has cloned the repo
-sudo install -d -o floodwatch -g floodwatch -m 0750 /srv/floodwatch/var
-sudo install -d -o floodwatch -g floodwatch -m 0750 /srv/floodwatch/var/uploads
-ls -ld /srv/floodwatch /srv/floodwatch/var/uploads
+sudo install -d -o floodwatch -g floodwatch -m 0750 /var/www/floodwatch/var
+sudo install -d -o floodwatch -g floodwatch -m 0750 /var/www/floodwatch/var/uploads
+ls -ld /var/www/floodwatch /var/www/floodwatch/var/uploads
 ```
 
 The layout, once the deploy section has cloned the repo into it:
@@ -406,7 +406,7 @@ The layout, once the deploy section has cloned the repo into it:
 ├── .bun/                         # bun's install cache
 └── .ssh/                         # the deploy key
 
-/srv/floodwatch/                  # the git checkout AND the service's WorkingDirectory
+/var/www/floodwatch/                  # the git checkout AND the service's WorkingDirectory
 ├── .env                          # 0600 floodwatch:floodwatch - created in the deploy section
 ├── .next/                        # build output - ~28 MiB after `bun run build`
 ├── app/  components/  lib/       # application source, from git
@@ -423,7 +423,7 @@ The layout, once the deploy section has cloned the repo into it:
 - `lib/server/uploads.ts` defines `UPLOAD_DIR = join(process.cwd(), "var", "uploads")`. Both the write path (`POST /api/uploads`) and the read path (`app/uploads/[name]/route.ts`) use it. Start the service from a different directory and photos are written somewhere new and the ones already on disk 404.
 - `server.ts` and `prisma7.config.ts` both begin with `import "dotenv/config"`, which loads `.env` from the working directory. A wrong cwd means no `DATABASE_URL` and no `AUTH_SECRET`.
 
-So `WorkingDirectory=/srv/floodwatch` in the systemd unit, and `cd /srv/floodwatch` before any `bun run` command. Making `/srv/floodwatch` simultaneously the home directory and the checkout keeps those aligned by construction.
+So `WorkingDirectory=/var/www/floodwatch` in the systemd unit, and `cd /var/www/floodwatch` before any `bun run` command. Making `/var/www/floodwatch` simultaneously the home directory and the checkout keeps those aligned by construction.
 
 nginx never needs access to `var/uploads` - photos are streamed by the Node route handler, not served as static files (they are written after boot, and Next only indexes `public/` once at startup). `0750` is correct; do not loosen it to let nginx in.
 
@@ -448,7 +448,7 @@ sudo apt-get install -y nodejs
 node -v   # expect v24.x
 ```
 
-**Not nvm.** nvm installs into a single user's home directory and is only initialised by an interactive login shell. systemd's `ExecStart` runs no shell profile, so the unit would have to hardcode `/srv/floodwatch/.nvm/versions/node/v24.18.0/bin/node` - a path that changes on every patch upgrade and silently breaks the service the next time someone runs `nvm install`. A system package at a stable path is the right answer for anything that runs under systemd.
+**Not nvm.** nvm installs into a single user's home directory and is only initialised by an interactive login shell. systemd's `ExecStart` runs no shell profile, so the unit would have to hardcode `/var/www/floodwatch/.nvm/versions/node/v24.18.0/bin/node` - a path that changes on every patch upgrade and silently breaks the service the next time someone runs `nvm install`. A system package at a stable path is the right answer for anything that runs under systemd.
 
 Remember that unattended-upgrades will not touch this repository. Node upgrades are manual:
 
@@ -585,7 +585,7 @@ node -v                               # v24.x  (>= 20.9.0)
 bun --version                         # 1.4.0
 id floodwatch                         # uid=... gid=... groups=...
 ls -ld /home/floodwatch               # drwxr-xr-x floodwatch floodwatch
-ls -ld /srv/floodwatch                # drwxr-xr-x floodwatch floodwatch, and EMPTY until the clone
+ls -ld /var/www/floodwatch                # drwxr-xr-x floodwatch floodwatch, and EMPTY until the clone
 free -h                               # ~3.8Gi Mem, 2.0Gi Swap
 swapon --show                         # /swapfile  file  2G
 df -h /                               # ~49G size, plenty available
@@ -608,12 +608,12 @@ Everything below runs as `root` (via `sudo`) unless it says otherwise. Commands 
 **What this section assumes has already happened.** Install, role and cluster configuration stand alone - do them whenever you like. But everything from *DATABASE_URL* onward needs the application side in place first:
 
 - the `floodwatch` OS account exists (created in *Instance provisioning*, and deliberately given the *same* name as the DB role - that is what makes `peer` authentication work below),
-- `/srv/floodwatch` holds the checkout and a `.env`,
+- `/var/www/floodwatch` holds the checkout and a `.env`,
 - a **full** `bun install` has run there. Not `--production`: `prisma` is a devDependency, and the `postinstall` hook (`prisma generate`) writes `generated/prisma/`, which is gitignored and therefore does not exist until you generate it on the box. `prisma/seed-base.ts` imports `../generated/prisma/client` directly, so without it the seed dies with `Cannot find module`.
 - `bun` is reachable from a non-login shell as the `floodwatch` user. The official installer drops it in the *installing* user's `~/.bun/bin`, which the service account's PATH does not include. Check before you rely on it:
 
 ```bash
-sudo -u floodwatch bash -c 'cd /srv/floodwatch && command -v bun && bun --version'
+sudo -u floodwatch bash -c 'cd /var/www/floodwatch && command -v bun && bun --version'
 ```
 
 If that prints nothing, symlink or install bun into `/usr/local/bin` before continuing.
@@ -786,15 +786,15 @@ There must be **no** `0.0.0.0:5432` line in the `ss` output. If there is, you ha
 
 ### DATABASE_URL
 
-`.env.example` shows the shape. **Append** the production value to `/srv/floodwatch/.env` - do not `tee` over that file. It is the same `.env` that holds `AUTH_SECRET`, `PORT`, `HOSTNAME` and `NEXT_PUBLIC_SOCKET_PATH`, it is gitignored (`.gitignore` ignores `.env*` except `.env.example`), so there is no copy in the repo to restore from, and clobbering `AUTH_SECRET` invalidates every session cookie already issued.
+`.env.example` shows the shape. **Append** the production value to `/var/www/floodwatch/.env` - do not `tee` over that file. It is the same `.env` that holds `AUTH_SECRET`, `PORT`, `HOSTNAME` and `NEXT_PUBLIC_SOCKET_PATH`, it is gitignored (`.gitignore` ignores `.env*` except `.env.example`), so there is no copy in the repo to restore from, and clobbering `AUTH_SECRET` invalidates every session cookie already issued.
 
 ```dotenv
 DATABASE_URL="postgresql://floodwatch:PASTE_THE_HEX_PASSWORD_HERE@127.0.0.1:5432/floodwatch?schema=public"
 ```
 
 ```bash
-sudo chown floodwatch:floodwatch /srv/floodwatch/.env
-sudo chmod 600 /srv/floodwatch/.env
+sudo chown floodwatch:floodwatch /var/www/floodwatch/.env
+sudo chmod 600 /var/www/floodwatch/.env
 ```
 
 (Both of those assume the deploy/systemd sections have already created the account and the tree. If you are running this section first, come back for them.)
@@ -802,7 +802,7 @@ sudo chmod 600 /srv/floodwatch/.env
 Details that bite:
 
 - **Use `127.0.0.1`, not `localhost`.** `localhost` resolves to `::1` first on Ubuntu, which works only because the `::1/128` HBA line above exists. Being explicit removes a resolver from the failure path.
-- **`.env` is found relative to the working directory.** Both `server.ts` and `prisma7.config.ts` start with `import "dotenv/config"`, which loads `.env` from `process.cwd()`. The systemd unit therefore needs `WorkingDirectory=/srv/floodwatch`, and you must `cd /srv/floodwatch` before running any `prisma` command by hand - that same cwd is also how the Prisma CLI discovers `prisma7.config.ts` and where `var/uploads` resolves.
+- **`.env` is found relative to the working directory.** Both `server.ts` and `prisma7.config.ts` start with `import "dotenv/config"`, which loads `.env` from `process.cwd()`. The systemd unit therefore needs `WorkingDirectory=/var/www/floodwatch`, and you must `cd /var/www/floodwatch` before running any `prisma` command by hand - that same cwd is also how the Prisma CLI discovers `prisma7.config.ts` and where `var/uploads` resolves.
 - **`?schema=public` is honoured by the Prisma CLI but ignored at runtime.** The migrate engine reads it from the `datasource.url` that `prisma7.config.ts` supplies and creates objects in that schema. At runtime, `lib/db.ts` constructs `new PrismaPg({ connectionString })` with no second options argument - and `@prisma/adapter-pg` takes the schema from its *options* object (`PrismaPgOptions.schema`), not from the URL. The param is copied verbatim onto the `pg` config by `pg-connection-string` (it copies every query parameter onto the config object), where `pg` ignores it. Queries therefore go out unqualified and resolve through `search_path`. With the `ALTER ROLE … SET search_path = public` above, both paths land in `public` and agree. **Consequence: do not change `?schema=` to anything but `public`.** Migrations would move to the new schema while the running app kept reading `public`, and you would get an empty-looking, silently broken app rather than an error.
 - If you insist on a password with symbols, percent-encode it (`@` → `%40`, `/` → `%2F`, `#` → `%23`, `%` → `%25`). Hex avoids the whole problem.
 
@@ -906,7 +906,7 @@ sudo -u floodwatch psql -d floodwatch -c "select current_user, current_database(
 TCP with the real credentials (proves `pg_hba.conf`, scram, and the password all line up):
 
 ```bash
-sudo -u floodwatch bash -c 'cd /srv/floodwatch && set -a && . ./.env && set +a
+sudo -u floodwatch bash -c 'cd /var/www/floodwatch && set -a && . ./.env && set +a
   psql "$DATABASE_URL" -c "select current_user, current_database(), current_schemas(true);"'
 ```
 
@@ -936,7 +936,7 @@ set -euo pipefail
 umask 027
 
 BACKUP_DIR=/var/backups/floodwatch
-APP_DIR=/srv/floodwatch
+APP_DIR=/var/www/floodwatch
 KEEP_DAYS=14
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 
@@ -1018,7 +1018,7 @@ A broadcast writes one `PushDispatch` row in the same transaction as the alert, 
 Both units are checked in at `deploy/systemd/`, with install and troubleshooting notes in `deploy/systemd/README.md`. Install them from there rather than retyping:
 
 ```bash
-cd /srv/floodwatch
+cd /var/www/floodwatch
 sudo install -m 0644 deploy/systemd/floodwatch-push-sweep.service \
                      deploy/systemd/floodwatch-push-sweep.timer \
                      /etc/systemd/system/
@@ -1042,7 +1042,7 @@ Type=oneshot
 # The secret is read from the app's own .env rather than duplicated here, so
 # rotating it is one edit. EnvironmentFile does not export to the shell, hence
 # the explicit source.
-ExecStart=/bin/bash -c 'set -a; . /srv/floodwatch/.env; set +a; curl -fsS -m 30 -X POST -H "x-push-sweep-secret: $PUSH_SWEEP_SECRET" http://127.0.0.1:3000/api/internal/push/sweep'
+ExecStart=/bin/bash -c 'set -a; . /var/www/floodwatch/.env; set +a; curl -fsS -m 30 -X POST -H "x-push-sweep-secret: $PUSH_SWEEP_SECRET" http://127.0.0.1:3000/api/internal/push/sweep'
 User=floodwatch
 Nice=10
 UNIT
@@ -1137,12 +1137,12 @@ sudo -u postgres pg_restore --dbname=floodwatch --exit-on-error \
 sudo -u postgres vacuumdb --analyze-only --dbname=floodwatch
 
 # 6. Restore the matching uploads snapshot.
-sudo rm -rf /srv/floodwatch/var/uploads
-sudo tar -xzf /var/backups/floodwatch/uploads-20260830T031700Z.tar.gz -C /srv/floodwatch/var
-sudo chown -R floodwatch:floodwatch /srv/floodwatch/var/uploads
+sudo rm -rf /var/www/floodwatch/var/uploads
+sudo tar -xzf /var/backups/floodwatch/uploads-20260830T031700Z.tar.gz -C /var/www/floodwatch/var
+sudo chown -R floodwatch:floodwatch /var/www/floodwatch/var/uploads
 
 # 7. Confirm migration state matches the deployed code before letting traffic in.
-sudo -u floodwatch bash -c 'cd /srv/floodwatch && bunx prisma migrate status'
+sudo -u floodwatch bash -c 'cd /var/www/floodwatch && bunx prisma migrate status'
 
 # 8. Start the app.
 sudo systemctl start floodwatch
@@ -1157,7 +1157,7 @@ Step 7 matters: the dump includes `_prisma_migrations`, so a restore also rewind
 
 ## First deploy: code, environment, database, build
 
-This section takes you from a bare Ubuntu 24.04 instance with Node, bun, and PostgreSQL already installed to a built, runnable tree at `/srv/floodwatch`. It stops just before the systemd unit and nginx.
+This section takes you from a bare Ubuntu 24.04 instance with Node, bun, and PostgreSQL already installed to a built, runnable tree at `/var/www/floodwatch`. It stops just before the systemd unit and nginx.
 
 It assumes the earlier sections left you with:
 
@@ -1169,11 +1169,11 @@ Every command below is marked as root (`sudo …`) or as the app user (`sudo -u 
 
 ### Run everything as the app user
 
-The `floodwatch` account (home `/home/floodwatch`) and the empty `/srv/floodwatch` directory were both created in *Instance provisioning*. Confirm them before you start:
+The `floodwatch` account (home `/home/floodwatch`) and the empty `/var/www/floodwatch` directory were both created in *Instance provisioning*. Confirm them before you start:
 
 ```bash
 # root
-id floodwatch && ls -ld /home/floodwatch /srv/floodwatch
+id floodwatch && ls -ld /home/floodwatch /var/www/floodwatch
 ```
 
 Run **every** git, bun, and prisma command in this section as `floodwatch`. If you build or install as root, the resulting `node_modules/`, `.next/`, and `generated/` are root-owned and the service - which writes to `.next/cache` at runtime - breaks in ways that look like Next.js bugs. Root running `git` in a tree it does not own also trips git's "dubious ownership" guard.
@@ -1232,7 +1232,7 @@ Clone into the (empty) directory:
 
 ```bash
 # app user
-sudo -u floodwatch -H git clone git@github.com:szyfr/floodwatch.git /srv/floodwatch
+sudo -u floodwatch -H git clone git@github.com:szyfr/floodwatch.git /var/www/floodwatch
 ```
 
 **HTTPS token (alternative).** If you cannot add a deploy key, use a fine-grained PAT with read-only Contents on this repo:
@@ -1244,14 +1244,14 @@ sudo -u floodwatch -H bash -c '
   printf "https://%s:%s@github.com\n" "USERNAME" "TOKEN" > ~/.git-credentials
   git config --global credential.helper store
 '
-sudo -u floodwatch -H git clone https://github.com/szyfr/floodwatch.git /srv/floodwatch
+sudo -u floodwatch -H git clone https://github.com/szyfr/floodwatch.git /var/www/floodwatch
 ```
 
 Do not embed the token in the remote URL - `git remote -v`, `.git/config`, and every error message would then print it. Tokens also expire, which turns a routine `git pull` into an outage; the deploy key does not.
 
 ### Write the production `.env`
 
-`.env` is loaded by `import "dotenv/config"` at the top of both `server.ts` and `prisma7.config.ts`, and dotenv resolves it relative to **`process.cwd()`**. It must live at `/srv/floodwatch/.env` and the service's `WorkingDirectory` must be `/srv/floodwatch`. `.gitignore` ignores `.env*` (except `.env.example`), so this file survives `git pull` but is *not* created by a fresh clone.
+`.env` is loaded by `import "dotenv/config"` at the top of both `server.ts` and `prisma7.config.ts`, and dotenv resolves it relative to **`process.cwd()`**. It must live at `/var/www/floodwatch/.env` and the service's `WorkingDirectory` must be `/var/www/floodwatch`. `.gitignore` ignores `.env*` (except `.env.example`), so this file survives `git pull` but is *not* created by a fresh clone.
 
 These are all the variables the code actually reads:
 
@@ -1281,8 +1281,8 @@ Generate the secret and write the file in one shot. The heredoc is expanded by *
 ```bash
 # root - you will be prompted for the postgres password, which is not echoed
 read -rsp 'postgres password for the floodwatch role: ' DB_PASS; echo
-sudo -u floodwatch -H bash -c 'umask 077; cat > /srv/floodwatch/.env' <<EOF
-# /srv/floodwatch/.env - production. Not in git.
+sudo -u floodwatch -H bash -c 'umask 077; cat > /var/www/floodwatch/.env' <<EOF
+# /var/www/floodwatch/.env - production. Not in git.
 
 # PostgreSQL on this same instance, over loopback.
 DATABASE_URL="postgresql://floodwatch:${DB_PASS}@127.0.0.1:5432/floodwatch?schema=public"
@@ -1308,8 +1308,8 @@ Verify ownership and mode - `AUTH_SECRET` is a session-forging key and `DATABASE
 
 ```bash
 # root
-stat -c '%U %G %a %n' /srv/floodwatch/.env
-# expect: floodwatch floodwatch 600 /srv/floodwatch/.env
+stat -c '%U %G %a %n' /var/www/floodwatch/.env
+# expect: floodwatch floodwatch 600 /var/www/floodwatch/.env
 ```
 
 Now prove the URL actually connects, before an install failure makes you wonder whether it was the database or the tooling:
@@ -1317,7 +1317,7 @@ Now prove the URL actually connects, before an install failure makes you wonder 
 ```bash
 # app user - libpq rejects the ?schema=public that Prisma wants, so strip it for this check only
 sudo -u floodwatch -H bash -lc '
-  set -a; . /srv/floodwatch/.env; set +a
+  set -a; . /var/www/floodwatch/.env; set +a
   psql "${DATABASE_URL%%\?*}" -tAc "select current_user, current_database();"
 '
 # expect: floodwatch|floodwatch
@@ -1347,7 +1347,7 @@ The lockfile is `bun.lock`. `--frozen-lockfile` is the correct flag for bun 1.4 
 
 ```bash
 # app user
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun install --frozen-lockfile'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun install --frozen-lockfile'
 ```
 
 **Do not add `--production`.** The `prisma` CLI, `typescript`, `tailwindcss`, and `@tailwindcss/postcss` are all devDependencies, and both the postinstall hook and `next build` need them. `tsx` is a regular dependency, so the runtime is covered by a full install.
@@ -1355,7 +1355,7 @@ sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun install --frozen-lockf
 **`.env` must already exist when you run this.** `package.json` has `"postinstall": "prisma generate"`, bun runs the root package's own lifecycle scripts (it blocks *dependencies'* scripts unless trusted, but the root project's always run), and every Prisma CLI invocation loads `prisma7.config.ts` - which evaluates `env("DATABASE_URL")` eagerly while constructing the config object, so an empty value throws exactly like a missing one. With no `.env` the install dies with:
 
 ```
-Failed to load config file "/srv/floodwatch/prisma7.config.ts" as a TypeScript/JavaScript module. Error: PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL.
+Failed to load config file "/var/www/floodwatch/prisma7.config.ts" as a TypeScript/JavaScript module. Error: PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL.
 ```
 
 Prisma 7 does not read `.env` on its own any more, which is exactly why `prisma7.config.ts` starts with `import "dotenv/config"`.
@@ -1364,14 +1364,14 @@ Confirm the generated client actually landed - this is the artifact everything d
 
 ```bash
 # app user
-sudo -u floodwatch -H bash -lc 'ls /srv/floodwatch/generated/prisma/client.ts'
+sudo -u floodwatch -H bash -lc 'ls /var/www/floodwatch/generated/prisma/client.ts'
 ```
 
 **Recovery** if you installed before writing `.env`: `node_modules/` is fine, only `generated/prisma/` is missing. Write `.env`, then regenerate - no reinstall needed:
 
 ```bash
 # app user
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bunx prisma generate'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bunx prisma generate'
 ```
 
 Leaving it missing produces a confusing downstream failure instead: every `import … from "@/generated/prisma/client"` fails to resolve, so the build and the seed both blow up on a module-not-found error that says nothing about `DATABASE_URL`.
@@ -1396,8 +1396,8 @@ Then:
 
 ```bash
 # app user
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun run db:deploy'
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bunx prisma migrate status'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun run db:deploy'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bunx prisma migrate status'
 ```
 
 `db:deploy` is `prisma migrate deploy`. It applies the files already committed under `prisma/migrations/` in order, and nothing else. `migrate status` is informational and **exits non-zero whenever anything is pending or out of sync** - read its text rather than its exit code, and do not run it under `set -e` in a script that should continue.
@@ -1413,7 +1413,7 @@ That account's password defaults to the literal string `"floodwatch"`. Set `SEED
 ```bash
 # app user
 sudo -u floodwatch -H bash -lc '
-  cd /srv/floodwatch
+  cd /var/www/floodwatch
   read -rsp "password for dev@renmendoza.com: " SEED_ADMIN_PASSWORD; echo
   export SEED_ADMIN_PASSWORD
   bun run db:seed
@@ -1441,7 +1441,7 @@ This delete does **not** fail if the account has authored content - it succeeds 
 
 ```bash
 # app user
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun run build'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun run build'
 ```
 
 `build` is `prisma generate && next build`, and it produces two gitignored artifacts:
@@ -1453,34 +1453,34 @@ sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun run build'
 
 **`NEXT_PUBLIC_SOCKET_PATH` is inlined at build time.** `lib/realtime/events.ts` exports `SOCKET_PATH = process.env.NEXT_PUBLIC_SOCKET_PATH || "/ws"`, and that module is imported by both `server.ts` (which reads the variable at runtime, from `.env`) and the browser bundle (where Next substitutes the literal string during `next build`).
 
-The build reads `.env` through **Next's own env loader**, not through `server.ts` - `server.ts` is not executed by a build at all. That loader also resolves `.env` relative to the working directory, which is the second reason the `cd /srv/floodwatch` above is not optional: build from anywhere else and the variable is simply absent, the client silently falls back to the `|| "/ws"` default, and you never see an error. Change the value in `.env` and restart without rebuilding and the two halves disagree the same way: the server listens on the new path while every browser keeps requesting the old one, and realtime stops working with no server-side error. **Changing `NEXT_PUBLIC_SOCKET_PATH` always requires a rebuild**, and the value must match the nginx `location` block as well.
+The build reads `.env` through **Next's own env loader**, not through `server.ts` - `server.ts` is not executed by a build at all. That loader also resolves `.env` relative to the working directory, which is the second reason the `cd /var/www/floodwatch` above is not optional: build from anywhere else and the variable is simply absent, the client silently falls back to the `|| "/ws"` default, and you never see an error. Change the value in `.env` and restart without rebuilding and the two halves disagree the same way: the server listens on the new path while every browser keeps requesting the old one, and realtime stops working with no server-side error. **Changing `NEXT_PUBLIC_SOCKET_PATH` always requires a rebuild**, and the value must match the nginx `location` block as well.
 
 If the build is killed with no error message, it ran out of memory - Turbopack peaks around 3 GiB on this codebase (`journalctl -k | grep -i oom` will confirm). Check that the swapfile from *Instance provisioning* is active (`swapon --show`); if the box has under 4 GiB of RAM, enlarge it or move to a bigger instance.
 
 ### The uploads directory
 
-`lib/server/uploads.ts` defines `UPLOAD_DIR = join(process.cwd(), "var", "uploads")`. It is **relative to the working directory**, not to an env var and not to the module's location. With the service's `WorkingDirectory=/srv/floodwatch`, photos land in `/srv/floodwatch/var/uploads/` and are served back out of the same directory by `app/uploads/[name]/route.ts`. Start the process from anywhere else and uploads write to a `var/uploads` under *that* directory, while previously stored photos 404.
+`lib/server/uploads.ts` defines `UPLOAD_DIR = join(process.cwd(), "var", "uploads")`. It is **relative to the working directory**, not to an env var and not to the module's location. With the service's `WorkingDirectory=/var/www/floodwatch`, photos land in `/var/www/floodwatch/var/uploads/` and are served back out of the same directory by `app/uploads/[name]/route.ts`. Start the process from anywhere else and uploads write to a `var/uploads` under *that* directory, while previously stored photos 404.
 
 `var/uploads/.gitkeep` is tracked, so the directory exists after a clone. Confirm it is writable by the app user:
 
 ```bash
 # root
-sudo install -d -o floodwatch -g floodwatch -m 750 /srv/floodwatch/var/uploads
-stat -c '%U %G %a %n' /srv/floodwatch/var/uploads
+sudo install -d -o floodwatch -g floodwatch -m 750 /var/www/floodwatch/var/uploads
+stat -c '%U %G %a %n' /var/www/floodwatch/var/uploads
 ```
 
 `750` is enough: nginx never reads these files, the Node process streams them.
 
 **With `S3_BUCKET` set**, none of that applies to new photos - they go to the bucket and `var/uploads` is only read for photos stored before the switch. Two follow-ons once you are confident nothing is left on disk: copy the stragglers up with `aws s3 sync var/uploads "s3://$S3_BUCKET/uploads/"`, and drop `/var/www/floodwatch/var` from the unit's `ReadWritePaths`, since the service no longer writes there. Set a bucket lifecycle rule too - deleting a report is a soft delete and nothing ever removes the file, so storage grows without bound in either backend.
 
-**If you move to a release-directory scheme,** where each deploy is a fresh clone into `/srv/floodwatch/releases/<timestamp>` with a `current` symlink, note that systemd resolves `WorkingDirectory` symlinks at start time and Node's `process.cwd()` returns the *physical* path. So `UPLOAD_DIR` becomes `/srv/floodwatch/releases/<timestamp>/var/uploads` - every deploy silently starts with an empty photo directory and orphans the old one. Make `var/uploads` (and `.env`, for the same reason) a symlink into shared storage in every release:
+**If you move to a release-directory scheme,** where each deploy is a fresh clone into `/var/www/floodwatch/releases/<timestamp>` with a `current` symlink, note that systemd resolves `WorkingDirectory` symlinks at start time and Node's `process.cwd()` returns the *physical* path. So `UPLOAD_DIR` becomes `/var/www/floodwatch/releases/<timestamp>/var/uploads` - every deploy silently starts with an empty photo directory and orphans the old one. Make `var/uploads` (and `.env`, for the same reason) a symlink into shared storage in every release:
 
 ```bash
 # root - once. Both shared targets must exist before anything links at them.
-sudo install -d -o floodwatch -g floodwatch -m 750 /srv/floodwatch/shared/uploads
-# write /srv/floodwatch/shared/.env now, with the same heredoc as the .env section
+sudo install -d -o floodwatch -g floodwatch -m 750 /var/www/floodwatch/shared/uploads
+# write /var/www/floodwatch/shared/.env now, with the same heredoc as the .env section
 # above but redirected to that path; it must end up floodwatch-owned and mode 600.
-stat -c '%U %G %a %n' /srv/floodwatch/shared/.env
+stat -c '%U %G %a %n' /var/www/floodwatch/shared/.env
 ```
 
 ```bash
@@ -1489,11 +1489,11 @@ stat -c '%U %G %a %n' /srv/floodwatch/shared/.env
 # here: $(date) would produce a fresh one, the paths below would not exist, and
 # the ln would fail while rm -rf silently did nothing.
 sudo -u floodwatch -H bash -lc '
-  R=/srv/floodwatch/releases/20260830120000   # ← the release you just cloned
+  R=/var/www/floodwatch/releases/20260830120000   # ← the release you just cloned
   test -d "$R" || { echo "no such release: $R" >&2; exit 1; }
   rm -rf "$R/var/uploads" "$R/.env"
-  ln -s /srv/floodwatch/shared/uploads "$R/var/uploads"
-  ln -s /srv/floodwatch/shared/.env    "$R/.env"
+  ln -s /var/www/floodwatch/shared/uploads "$R/var/uploads"
+  ln -s /var/www/floodwatch/shared/.env    "$R/.env"
 '
 ```
 
@@ -1503,7 +1503,7 @@ The single-directory layout in this guide has neither problem, which is one reas
 
 ```bash
 # app user - foreground, Ctrl-C to stop
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun run start'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun run start'
 ```
 
 Expect `> Pampanga Flood Watch on http://127.0.0.1:3000  (dev=false)` and `> realtime on /ws`. If it says `dev=true`, `NODE_ENV` is not reaching the process - and that is not cosmetic: `server.ts` computes `dev = process.env.NODE_ENV !== "production"` and hands it to `next({ dev })`, so a `true` there boots the development compiler in production. Fix it before going further.
@@ -1539,14 +1539,14 @@ STAMP=$(date +%F-%H%M%S)
 sudo install -d -o postgres -g postgres -m 750 /var/backups/floodwatch
 sudo -u postgres pg_dump -Fc -d floodwatch \
   -f /var/backups/floodwatch/pre-deploy-$STAMP.dump
-sudo tar -C /srv/floodwatch/var -czf \
+sudo tar -C /var/www/floodwatch/var -czf \
   /var/backups/floodwatch/pre-deploy-$STAMP-uploads.tar.gz uploads
 
 # app user
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && git pull --ff-only origin main'
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun install --frozen-lockfile'
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun run db:deploy'
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun run build'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && git pull --ff-only origin main'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun install --frozen-lockfile'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun run db:deploy'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun run build'
 
 # root
 sudo systemctl restart floodwatch
@@ -1577,10 +1577,10 @@ Code rollback is cheap; schema rollback is not. Prisma generates no down-migrati
 
 ```bash
 # app user - find the commit that was live before
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && git log --oneline -10'
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && git -c advice.detachedHead=false checkout <sha>'
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun install --frozen-lockfile'
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bun run build'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && git log --oneline -10'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && git -c advice.detachedHead=false checkout <sha>'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun install --frozen-lockfile'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bun run build'
 
 # root
 sudo systemctl restart floodwatch
@@ -1604,20 +1604,20 @@ If the bad deploy included a migration, rolling the code back is not enough - th
 
   `--force` (PostgreSQL 13+, and 24.04 ships 16) terminates leftover connections; without it `dropdb` fails with `database "floodwatch" is being accessed by other users` for any stray `psql` or un-timed-out pool connection, and the rollback stalls half-done.
 
-  Photos in `/srv/floodwatch/var/uploads/` are *not* in that dump and are not rolled back. Rows referencing a photo may be gone while the file remains - harmless, just orphaned bytes. The reverse (a row pointing at a file that no longer exists) only happens if you restore the uploads directory too, which is why the database dump and the uploads archive are taken as a pair above and must be restored as a pair:
+  Photos in `/var/www/floodwatch/var/uploads/` are *not* in that dump and are not rolled back. Rows referencing a photo may be gone while the file remains - harmless, just orphaned bytes. The reverse (a row pointing at a file that no longer exists) only happens if you restore the uploads directory too, which is why the database dump and the uploads archive are taken as a pair above and must be restored as a pair:
 
   ```bash
   # root - only alongside the matching dump, never on its own
-  sudo tar -C /srv/floodwatch/var -xzf \
+  sudo tar -C /var/www/floodwatch/var -xzf \
     /var/backups/floodwatch/pre-deploy-<stamp>-uploads.tar.gz
-  sudo chown -R floodwatch:floodwatch /srv/floodwatch/var/uploads
+  sudo chown -R floodwatch:floodwatch /var/www/floodwatch/var/uploads
   ```
 
 Finish either path by confirming what the database actually thinks:
 
 ```bash
 # app user
-sudo -u floodwatch -H bash -lc 'cd /srv/floodwatch && bunx prisma migrate status'
+sudo -u floodwatch -H bash -lc 'cd /var/www/floodwatch && bunx prisma migrate status'
 ```
 
 Then return to `main` when the fix lands (`git checkout main && git pull --ff-only`) so the next deploy is not building from a detached HEAD.
@@ -1657,13 +1657,13 @@ sudo -u nobody /usr/local/bin/bun --version   # proves it resolves off the login
 Now resolve the launcher. There are three ways to run `tsx` and only one of them is right for a unit:
 
 ```bash
-# from /srv/floodwatch
-readlink -f node_modules/.bin/tsx    # -> /srv/floodwatch/node_modules/tsx/dist/cli.mjs
+# from /var/www/floodwatch
+readlink -f node_modules/.bin/tsx    # -> /var/www/floodwatch/node_modules/tsx/dist/cli.mjs
 head -1 node_modules/tsx/dist/cli.mjs # -> #!/usr/bin/env node
 ```
 
-- `ExecStart=/srv/floodwatch/node_modules/.bin/tsx server.ts` - **wrong**. systemd execs the file directly and the kernel runs its `#!/usr/bin/env node` shebang, which searches the unit's PATH for `node`. Works only if Node is in `/usr/bin`, and dies with a confusing `203/EXEC` or "node: not found" if it isn't.
-- `ExecStart=/usr/bin/node /srv/floodwatch/node_modules/tsx/dist/cli.mjs server.ts` - works, but the tsx CLI **spawns a second Node process** and the app runs in the child:
+- `ExecStart=/var/www/floodwatch/node_modules/.bin/tsx server.ts` - **wrong**. systemd execs the file directly and the kernel runs its `#!/usr/bin/env node` shebang, which searches the unit's PATH for `node`. Works only if Node is in `/usr/bin`, and dies with a confusing `203/EXEC` or "node: not found" if it isn't.
+- `ExecStart=/usr/bin/node /var/www/floodwatch/node_modules/tsx/dist/cli.mjs server.ts` - works, but the tsx CLI **spawns a second Node process** and the app runs in the child:
 
   ```
   PID 1830316  /usr/bin/node .../tsx/dist/cli.mjs server.ts            <- systemd's MainPID
@@ -1672,7 +1672,7 @@ head -1 node_modules/tsx/dist/cli.mjs # -> #!/usr/bin/env node
   ```
 
   systemd then tracks the wrapper, not the server: `MainPID` is wrong for anything that inspects it, and `KillMode=mixed` or an `ExecStop` aimed at `$MAINPID` would signal the wrapper only.
-- `ExecStart=/usr/bin/node --import file:///srv/floodwatch/node_modules/tsx/dist/loader.mjs /srv/floodwatch/server.ts` - **use this.** One process, correct MainPID, SIGTERM lands directly on the process that has the shutdown handler. This is exactly what tsx's own CLI ends up executing, minus the wrapper and minus `preflight.cjs`, which exists to bridge signals and IPC back to that wrapper - with no wrapper there is nothing to bridge. Verified booting this repo in production mode: it prints `> Pampanga Flood Watch on http://127.0.0.1:3000  (dev=false)` and `> realtime on /ws`, serves HTTP, and answers the Socket.io handshake at `/ws/?EIO=4&transport=polling` with 200. That handshake is also the proof that tsx's ESM loader is resolving the `@/…` tsconfig aliases, since `lib/realtime/handlers.ts` imports `@/lib/realtime/events`.
+- `ExecStart=/usr/bin/node --import file:///var/www/floodwatch/node_modules/tsx/dist/loader.mjs /var/www/floodwatch/server.ts` - **use this.** One process, correct MainPID, SIGTERM lands directly on the process that has the shutdown handler. This is exactly what tsx's own CLI ends up executing, minus the wrapper and minus `preflight.cjs`, which exists to bridge signals and IPC back to that wrapper - with no wrapper there is nothing to bridge. Verified booting this repo in production mode: it prints `> Pampanga Flood Watch on http://127.0.0.1:3000  (dev=false)` and `> realtime on /ws`, serves HTTP, and answers the Socket.io handshake at `/ws/?EIO=4&transport=polling` with 200. That handshake is also the proof that tsx's ESM loader is resolving the `@/…` tsconfig aliases, since `lib/realtime/handlers.ts` imports `@/lib/realtime/events`.
 
 Note the `file://` URL. `--import tsx` (the bare specifier) also works, but only because Node resolves it relative to the *current working directory* - one more silent dependency on cwd. The absolute file URL has no such dependency.
 
@@ -1683,24 +1683,24 @@ Do all of this **before** the smoke test and before the first `systemctl start`.
 ```bash
 # as root - the account itself was created in *Instance provisioning*
 id floodwatch
-install -d -o floodwatch -g floodwatch -m 750 /srv/floodwatch/var/uploads
+install -d -o floodwatch -g floodwatch -m 750 /var/www/floodwatch/var/uploads
 
 # .env must exist before the first start. Contents are in "How the environment
 # actually reaches the process" below. The `test` guard matters: a bare `>` here
 # would truncate a secrets file you already wrote.
-test -f /srv/floodwatch/.env || install -o floodwatch -g floodwatch -m 600 /dev/null /srv/floodwatch/.env
-chown floodwatch:floodwatch /srv/floodwatch/.env
-chmod 600 /srv/floodwatch/.env
+test -f /var/www/floodwatch/.env || install -o floodwatch -g floodwatch -m 600 /dev/null /var/www/floodwatch/.env
+chown floodwatch:floodwatch /var/www/floodwatch/.env
+chmod 600 /var/www/floodwatch/.env
 
-chown -R floodwatch:floodwatch /srv/floodwatch
+chown -R floodwatch:floodwatch /var/www/floodwatch
 ```
 
 Do **not** create `.next` by hand. It has to be a real build, and so does `generated/prisma` - both are gitignored, neither is in the repo, and `lib/db.ts` imports `@/generated/prisma/client`. *First deploy* covers the install, the migration and the build; here, just assert their results before the first `systemctl start`:
 
 ```bash
 # as root
-test -f /srv/floodwatch/.next/BUILD_ID && echo "build ok"
-test -d /srv/floodwatch/generated/prisma && echo "client ok"
+test -f /var/www/floodwatch/.next/BUILD_ID && echo "build ok"
+test -d /var/www/floodwatch/generated/prisma && echo "client ok"
 ```
 
 Now smoke-test the exact command under systemd's own environment before writing the unit:
@@ -1708,9 +1708,9 @@ Now smoke-test the exact command under systemd's own environment before writing 
 ```bash
 # as root - runs a throwaway transient unit with the same user, cwd and env
 systemd-run --unit=floodwatch-smoke --uid=floodwatch --gid=floodwatch \
-  --property=WorkingDirectory=/srv/floodwatch \
+  --property=WorkingDirectory=/var/www/floodwatch \
   --setenv=NODE_ENV=production \
-  /usr/bin/node --import file:///srv/floodwatch/node_modules/tsx/dist/loader.mjs /srv/floodwatch/server.ts
+  /usr/bin/node --import file:///var/www/floodwatch/node_modules/tsx/dist/loader.mjs /var/www/floodwatch/server.ts
 journalctl -u floodwatch-smoke -f
 systemctl stop floodwatch-smoke
 ```
@@ -1736,17 +1736,17 @@ Group=floodwatch
 
 # Load-bearing: UPLOAD_DIR is join(process.cwd(),"var","uploads") and
 # dotenv reads ./.env relative to cwd. See notes below.
-WorkingDirectory=/srv/floodwatch
+WorkingDirectory=/var/www/floodwatch
 
-# The ONLY variable systemd sets. Everything else lives in /srv/floodwatch/.env,
+# The ONLY variable systemd sets. Everything else lives in /var/www/floodwatch/.env,
 # which the app loads itself via `import "dotenv/config"`.
 Environment=NODE_ENV=production
 
-ExecStart=/usr/bin/node --import file:///srv/floodwatch/node_modules/tsx/dist/loader.mjs /srv/floodwatch/server.ts
+ExecStart=/usr/bin/node --import file:///var/www/floodwatch/node_modules/tsx/dist/loader.mjs /var/www/floodwatch/server.ts
 
 # Readiness gate: hold the start job until the listener is actually up.
 # next().prepare() + the first Prisma client construction take a few seconds.
-# The host AND port here MUST match HOSTNAME/PORT in /srv/floodwatch/.env and
+# The host AND port here MUST match HOSTNAME/PORT in /var/www/floodwatch/.env and
 # nginx's upstream. HOSTNAME must be the literal 127.0.0.1, not "localhost".
 ExecStartPost=/bin/bash -c 'for i in {1..60}; do (exec 3<>/dev/tcp/127.0.0.1/3000) 2>/dev/null && exit 0; sleep 1; done; echo "floodwatch never opened 127.0.0.1:3000" >&2; exit 1'
 
@@ -1773,7 +1773,7 @@ PrivateTmp=true
 PrivateDevices=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/srv/floodwatch/var /srv/floodwatch/.next
+ReadWritePaths=/var/www/floodwatch/var /var/www/floodwatch/.next
 ProtectProc=invisible
 ProtectKernelTunables=true
 ProtectKernelModules=true
@@ -1801,17 +1801,17 @@ Confirm the preconditions are all in place before the first start:
 ```bash
 # as root - the unit will not start unless all of these hold
 id floodwatch
-test -d /srv/floodwatch/var/uploads && echo "uploads dir ok"
-test -f /srv/floodwatch/.next/BUILD_ID && echo "build ok"
-stat -c '%U %G %a %n' /srv/floodwatch/.env     # -> floodwatch floodwatch 600 /srv/floodwatch/.env
+test -d /var/www/floodwatch/var/uploads && echo "uploads dir ok"
+test -f /var/www/floodwatch/.next/BUILD_ID && echo "build ok"
+stat -c '%U %G %a %n' /var/www/floodwatch/.env     # -> floodwatch floodwatch 600 /var/www/floodwatch/.env
 ```
 
 ### Why WorkingDirectory is load-bearing
 
-`WorkingDirectory=/srv/floodwatch` is not cosmetic. Four things in this codebase resolve from `process.cwd()`:
+`WorkingDirectory=/var/www/floodwatch` is not cosmetic. Four things in this codebase resolve from `process.cwd()`:
 
-- **Uploads.** `lib/server/uploads.ts` has `export const UPLOAD_DIR = join(process.cwd(), "var", "uploads")`, and `app/api/uploads/route.ts` does `mkdir(UPLOAD_DIR, {recursive:true})` before writing. Start the service from `/` and the app happily creates `/var/uploads` and writes photos there - no error, uploads return 200, and `app/uploads/[name]/route.ts` even serves them back for as long as that process lives. The failure only surfaces when your backups (which cover `/srv/floodwatch/var/uploads`) turn out to contain nothing, or when the hardening below makes the write fail instead.
-- **`.env`.** `server.ts` and `prisma7.config.ts` both `import "dotenv/config"`, which reads `${cwd}/.env`. Verified on this repo: with cwd `/srv/floodwatch`, `DATABASE_URL` is set; with cwd `/`, it is not - and `lib/db.ts` then throws `DATABASE_URL is not set - copy .env.example to .env` on the first query.
+- **Uploads.** `lib/server/uploads.ts` has `export const UPLOAD_DIR = join(process.cwd(), "var", "uploads")`, and `app/api/uploads/route.ts` does `mkdir(UPLOAD_DIR, {recursive:true})` before writing. Start the service from `/` and the app happily creates `/var/uploads` and writes photos there - no error, uploads return 200, and `app/uploads/[name]/route.ts` even serves them back for as long as that process lives. The failure only surfaces when your backups (which cover `/var/www/floodwatch/var/uploads`) turn out to contain nothing, or when the hardening below makes the write fail instead.
+- **`.env`.** `server.ts` and `prisma7.config.ts` both `import "dotenv/config"`, which reads `${cwd}/.env`. Verified on this repo: with cwd `/var/www/floodwatch`, `DATABASE_URL` is set; with cwd `/`, it is not - and `lib/db.ts` then throws `DATABASE_URL is not set - copy .env.example to .env` on the first query.
 - **Next.** `next({dev,hostname,port})` locates `.next/`, `next.config.ts` and the build manifests relative to cwd.
 - **tsx.** It reads `tsconfig.json` from cwd to resolve the `@/…` path aliases that `lib/realtime/*` and every route handler use.
 
@@ -1819,7 +1819,7 @@ Because the uploads half of this fails *silently*, verify it once against the re
 
 ```bash
 # as root, after the service is running
-ls -l /srv/floodwatch/var/uploads     # the UUID.jpg/.png must appear HERE
+ls -l /var/www/floodwatch/var/uploads     # the UUID.jpg/.png must appear HERE
 ls -l /var/uploads 2>/dev/null        # must not exist
 ```
 
@@ -1828,14 +1828,14 @@ ls -l /var/uploads 2>/dev/null        # must not exist
 There are two independent channels and they overlap, so pick one and be deliberate:
 
 1. systemd's `Environment=` / `EnvironmentFile=` - injected into the process environment before Node starts.
-2. `import "dotenv/config"` inside `server.ts` - parses `/srv/floodwatch/.env` at startup.
+2. `import "dotenv/config"` inside `server.ts` - parses `/var/www/floodwatch/.env` at startup.
 
 **dotenv does not overwrite variables that already exist.** Verified here: with `PORT=4321` in the process environment, `PORT` in `.env` (3000) is ignored and the app sees 4321. So anything you put in the unit *silently shadows* the same key in `.env` - the classic "I edited `.env`, restarted, nothing changed" trap.
 
 **The recommendation: `.env` is the single source of truth for app config; the unit sets `NODE_ENV` and nothing else.**
 
 ```bash
-# /srv/floodwatch/.env  - owned by floodwatch:floodwatch, mode 600
+# /var/www/floodwatch/.env  - owned by floodwatch:floodwatch, mode 600
 DATABASE_URL="postgresql://floodwatch:…@127.0.0.1:5432/floodwatch?schema=public"
 AUTH_SECRET="…"            # openssl rand -hex 32
 PORT=3000
@@ -1847,13 +1847,13 @@ Those five are the whole runtime surface - they are the only variables the code 
 
 Why this split:
 
-- `prisma7.config.ts` also imports `dotenv/config`, so `bun run db:deploy` and `bun run db:seed` read the *same* file when you run them by hand as the app user from `/srv/floodwatch`. Move `DATABASE_URL` into the unit and those CLI runs stop working (or, worse, silently point at a different database).
+- `prisma7.config.ts` also imports `dotenv/config`, so `bun run db:deploy` and `bun run db:seed` read the *same* file when you run them by hand as the app user from `/var/www/floodwatch`. Move `DATABASE_URL` into the unit and those CLI runs stop working (or, worse, silently point at a different database).
 - `NODE_ENV` is the exception because it is a property of *how the process is launched*, not of what the app reads. `server.ts` computes `const dev = process.env.NODE_ENV !== "production"`, and the `next` package itself reads `NODE_ENV` while its module graph loads. Putting it in `.env` only works because `import "dotenv/config"` happens to be ordered before `import next from "next"` - reorder those two lines and the app boots the Turbopack **dev** server in production. Setting it in the unit removes that dependence entirely, and it keeps `.env` usable for `next build` and the Prisma CLI without poisoning them.
 - `NODE_ENV=production` is also what makes the session cookie secure: `lib/auth/token.ts` sets `secure: process.env.NODE_ENV === "production"`. Get this wrong and sign-in "works" but the cookie is not marked Secure. (Conversely, with it right, the cookie is only stored over HTTPS - so this unit is only useful behind the nginx TLS terminator.)
 - `HOSTNAME=127.0.0.1` rather than `localhost`: `server.ts` passes it straight to `httpServer.listen(port, hostname)`, and the literal IP is deterministic (no `::1`-vs-`127.0.0.1` resolution surprise), matches nginx's `proxy_pass`, and matches the `/dev/tcp` readiness probe in `ExecStartPost`. With `localhost` the listener can end up on `::1` only, at which point the probe never connects and systemd tears down a service that was actually healthy. The app must not be reachable except through nginx.
 - `NEXT_PUBLIC_SOCKET_PATH` is the odd one out: it is read at runtime by `server.ts`, but `lib/realtime/events.ts` is also imported by the client component `components/providers/socket-provider.tsx`, so the value is **inlined into the browser bundle at `next build`**. It therefore has to be in `.env` *when the build runs*, it has to match nginx's `location /ws`, and changing it needs a rebuild - a restart alone leaves browsers handshaking on the old path while the server listens on the new one. HTTP keeps working; realtime just stops, with nothing in any log. Never set this one in the unit only: `next build` would not see it.
 
-If you genuinely want systemd to own the secrets (e.g. `.env` must not live in the app directory), use `EnvironmentFile=/etc/floodwatch.env` and *delete* `/srv/floodwatch/.env` so there is still exactly one source - dotenv treats a missing file as a no-op. Be aware that systemd's parser is not dotenv's: no `export` prefix, no multi-line values, and `$` in a value is expanded by systemd unless you write `$$`. You will then have to pass `DATABASE_URL` by hand for every Prisma CLI invocation, and `NEXT_PUBLIC_SOCKET_PATH` still has to be present in the environment of the *build*, not just of the service.
+If you genuinely want systemd to own the secrets (e.g. `.env` must not live in the app directory), use `EnvironmentFile=/etc/floodwatch.env` and *delete* `/var/www/floodwatch/.env` so there is still exactly one source - dotenv treats a missing file as a no-op. Be aware that systemd's parser is not dotenv's: no `export` prefix, no multi-line values, and `$` in a value is expanded by systemd unless you write `$$`. You will then have to pass `DATABASE_URL` by hand for every Prisma CLI invocation, and `NEXT_PUBLIC_SOCKET_PATH` still has to be present in the environment of the *build*, not just of the service.
 
 Inspect what the running process actually got:
 
@@ -1877,16 +1877,16 @@ systemctl show floodwatch -p Environment   # shows ONLY what systemd set, not .e
 
 The set in the unit above has been chosen against this app's actual behaviour. `ProtectSystem=strict` mounts the entire filesystem read-only except `/dev`, `/proc`, `/sys`, so **every path this process writes must be listed in `ReadWritePaths`**:
 
-- `/srv/floodwatch/var` - report photos. `POST /api/uploads` does `mkdir(UPLOAD_DIR,{recursive:true})` then `writeFile`. Listing `var` rather than `var/uploads` means the `mkdir` still works if the directory is ever removed.
-- `/srv/floodwatch/.next` - Next writes its runtime caches here in production (`.next/cache/fetch-cache`, `.next/cache/.rscinfo`, the image-optimizer cache). On this repo those files have mtimes *after* the build, which is exactly what a read-only `.next` would break: not a crash, but EACCES noise in the journal and a cache that never warms.
+- `/var/www/floodwatch/var` - report photos. `POST /api/uploads` does `mkdir(UPLOAD_DIR,{recursive:true})` then `writeFile`. Listing `var` rather than `var/uploads` means the `mkdir` still works if the directory is ever removed.
+- `/var/www/floodwatch/.next` - Next writes its runtime caches here in production (`.next/cache/fetch-cache`, `.next/cache/.rscinfo`, the image-optimizer cache). On this repo those files have mtimes *after* the build, which is exactly what a read-only `.next` would break: not a crash, but EACCES noise in the journal and a cache that never warms.
 
-Everything else in `/srv/floodwatch` - source, `node_modules`, `generated/prisma`, `.env` - stays read-only to the service, which is the point.
+Everything else in `/var/www/floodwatch` - source, `node_modules`, `generated/prisma`, `.env` - stays read-only to the service, which is the point.
 
 Compatible and worth keeping:
 
 - `NoNewPrivileges=true`, `CapabilityBoundingSet=` (empty): the app listens on 3000, above 1024, so it needs no `CAP_NET_BIND_SERVICE`. nginx owns 80/443.
 - `PrivateTmp=true`: uploads never touch `/tmp`, and the Ubuntu Postgres package puts its unix socket in `/run/postgresql`, not `/tmp`. **This would break a Postgres built from source with `unix_socket_directories = '/tmp'`.**
-- `ProtectHome=true`: safe *because* the app lives in `/srv`, not `/home`. It is also what kills an nvm-based `ExecStart` under `/root` or `/home/ubuntu`, so keep the system-wide Node.
+- `ProtectHome=true`: safe *because* the app lives in `/var/www`, not `/home`. It is also what kills an nvm-based `ExecStart` under `/root` or `/home/ubuntu`, so keep the system-wide Node.
 - `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK`: `AF_INET` for the listener and for `DATABASE_URL` over `127.0.0.1:5432`; `AF_UNIX` for a socket-based `DATABASE_URL`, journald and NSS lookups; `AF_NETLINK` because Node's resolver/libuv queries interfaces over netlink. Dropping `AF_UNIX` or `AF_NETLINK` produces bizarre, hard-to-attribute failures.
 - `SystemCallFilter=@system-service` with `SystemCallErrorNumber=EPERM`: the standard service set covers Node. `EPERM` is deliberate - without it a filtered syscall kills the process with SIGSYS and you get no explanation, and with it the calls Node merely *probes* for (io_uring, for instance) fall back to their portable path instead of taking the process down.
 
@@ -1895,7 +1895,7 @@ Do **not** add these:
 - `MemoryDenyWriteExecute=true` - forbids W+X pages and instantly kills V8's JIT. Node will not run.
 - `PrivateNetwork=true` - an isolated netns has only its own loopback: nginx can no longer reach the app *and* the app can no longer reach Postgres on `127.0.0.1`.
 - `ProcSubset=pid` - hides `/proc/cpuinfo`, `/proc/stat`, `/proc/meminfo`. `os.cpus()` returns an empty array and anything sizing worker pools from it misbehaves. `ProtectProc=invisible` (which only hides *other* processes) is the safe half of this pair.
-- `ReadOnlyPaths=/srv/floodwatch` without the two `ReadWritePaths` entries - silently breaks photo uploads.
+- `ReadOnlyPaths=/var/www/floodwatch` without the two `ReadWritePaths` entries - silently breaks photo uploads.
 - `DynamicUser=true` - the uploads directory and `.env` need a stable owner across restarts.
 
 If you switch `DATABASE_URL` to the unix-socket form (`postgresql:///floodwatch?host=/run/postgresql`) and see a connect error, add `/run/postgresql` to `ReadWritePaths` - `ProtectSystem=strict` makes `/run` read-only too, and connecting to a unix socket needs write access to it. Score the result with:
@@ -1965,9 +1965,9 @@ Do not try to sign in yet if nginx and its certificate are not up. With `NODE_EN
 The full deploy sequence lives in *First deploy → Redeploy / update runbook*, and `systemctl restart floodwatch` is its last step. Two things about it belong here:
 
 - **`bun run build` replaces `.next` under the running process.** The live server still holds the old `BUILD_ID`, so between the build finishing and the restart, browsers get 404s on chunks that no longer exist and cache writes land in a directory that has been swapped out. Keep the build and the restart back to back; do not build "now" and restart "tonight".
-- **`cd /srv/floodwatch` before every `sudo -u floodwatch` command.** `sudo -u` does not change directory. From `/root`, the app user inherits a cwd it cannot read - `process.cwd()` fails and bun/node abort - and dotenv would look for `.env` somewhere else even if it did not.
+- **`cd /var/www/floodwatch` before every `sudo -u floodwatch` command.** `sudo -u` does not change directory. From `/root`, the app user inherits a cwd it cannot read - `process.cwd()` fails and bun/node abort - and dotenv would look for `.env` somewhere else even if it did not.
 
-Run the build **as the app user**, not as root. `generated/prisma` and `.next` are gitignored and rebuilt on the box; if root builds them, the service (running as `floodwatch`) can read them but cannot write `.next/cache`, and you get permission errors on every cache write. If you slip, `sudo chown -R floodwatch:floodwatch /srv/floodwatch/.next /srv/floodwatch/generated` fixes it.
+Run the build **as the app user**, not as root. `generated/prisma` and `.next` are gitignored and rebuilt on the box; if root builds them, the service (running as `floodwatch`) can read them but cannot write `.next/cache`, and you get permission errors on every cache write. If you slip, `sudo chown -R floodwatch:floodwatch /var/www/floodwatch/.next /var/www/floodwatch/generated` fixes it.
 
 What a restart costs: the port closes, so nginx returns 502 for the few seconds `app.prepare()` takes; every websocket drops. Clients recover on their own - `socket.io-client` reconnects, and `useScope` in `components/providers/socket-provider.tsx` re-emits `scope:join` whenever `connected` flips back to true, so the `province` and `lgu:<slug>` rooms rebuild without a page reload. In-flight uploads are lost; there is no request draining.
 
@@ -2080,7 +2080,7 @@ Behind Cloudflare every connection arrives from an edge address, so `$remote_add
 Cloudflare changes those ranges occasionally, and when they do the symptom is exactly the failure above. `deploy/nginx/refresh-cloudflare-ips.sh` rewrites the list in place:
 
 ```bash
-sudo /srv/floodwatch/deploy/nginx/refresh-cloudflare-ips.sh /etc/nginx/sites-available/floodwatch
+sudo /var/www/floodwatch/deploy/nginx/refresh-cloudflare-ips.sh /etc/nginx/sites-available/floodwatch
 sudo systemctl reload nginx
 ```
 
@@ -2105,7 +2105,7 @@ Note that Cloudflare terminates the visitor's connection, so these are edge-to-o
 The whole nginx configuration - both maps, the real-IP block and both server blocks - lives in the repo at **`deploy/nginx/floodwatch.conf`**, with its own README. That is the canonical copy; this section explains it rather than repeating it, so the two cannot drift.
 
 ```bash
-cd /srv/floodwatch/deploy/nginx
+cd /var/www/floodwatch/deploy/nginx
 sudo cp floodwatch.conf /etc/nginx/sites-available/floodwatch
 sudo ln -sfn /etc/nginx/sites-available/floodwatch /etc/nginx/sites-enabled/floodwatch
 sudo rm -f /etc/nginx/sites-enabled/default
@@ -2284,17 +2284,17 @@ Everything below assumes the shape built in the previous sections: one EC2 insta
 | Placeholder | Value used below |
 | --- | --- |
 | Domain | `floodwatch.example.ph` |
-| App directory | `/srv/floodwatch` (also the unit's `WorkingDirectory`) |
+| App directory | `/var/www/floodwatch` (also the unit's `WorkingDirectory`) |
 | Unix user / unit / DB name / DB role | `floodwatch` |
 | App listener | `127.0.0.1:3000` (`HOSTNAME=127.0.0.1`, `PORT=3000`) |
-| Environment file | `/srv/floodwatch/.env`, mode `0600`, owned by `floodwatch` |
+| Environment file | `/var/www/floodwatch/.env`, mode `0600`, owned by `floodwatch` |
 | bun | installed **system-wide** at `/usr/local/bin/bun` |
 
 Every block is labelled with who runs it: `# instance · root`, `# instance · app user`, or `# your laptop`.
 
 > `bun` must be on a path `sudo` will find. `sudo` resets `PATH` to `secure_path` (`/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`), and the usual bun installer drops it in `~/.bun/bin`, which is not on that list - so every `sudo -u floodwatch bun …` below would fail with `sudo: bun: command not found`. Install it system-wide, confirm with `command -v bun`, and substitute your real absolute path if it is not `/usr/local/bin/bun`.
 
-> A healthy service is **one** node process, because the unit's `ExecStart` invokes tsx's loader directly (`node --import file://…/tsx/dist/loader.mjs /srv/floodwatch/server.ts`). systemd's `MainPID` is then the process that actually holds the HTTP listener, the socket.io registry and the `SIGINT`/`SIGTERM` handlers, so `SIGTERM` reaches the shutdown handler directly.
+> A healthy service is **one** node process, because the unit's `ExecStart` invokes tsx's loader directly (`node --import file://…/tsx/dist/loader.mjs /var/www/floodwatch/server.ts`). systemd's `MainPID` is then the process that actually holds the HTTP listener, the socket.io registry and the `SIGINT`/`SIGTERM` handlers, so `SIGTERM` reaches the shutdown handler directly.
 >
 > If you instead run it through the tsx **CLI** (`node …/tsx/dist/cli.mjs server.ts`), you get two processes - the CLI wrapper is `MainPID` and the app runs in a child - and the unit must then keep systemd's default `KillMode=control-group`, because `KillMode=process` would signal only the wrapper and the graceful shutdown would never run. The single-process form in *Running the server as a systemd unit* avoids all of that.
 
@@ -2311,7 +2311,7 @@ systemctl show floodwatch -p NRestarts -p MainPID -p WorkingDirectory
 journalctl -u floodwatch -n 20 --no-pager
 ```
 
-Expected: `active`, `NRestarts=0`, `WorkingDirectory=/srv/floodwatch`, and in the log:
+Expected: `active`, `NRestarts=0`, `WorkingDirectory=/var/www/floodwatch`, and in the log:
 
 ```
 > Pampanga Flood Watch on http://127.0.0.1:3000  (dev=false)
@@ -2504,7 +2504,7 @@ Expected: `200`, `content-type: image/jpeg`, `cache-control: public, max-age=315
 
 ```bash
 # instance · root
-ls -l /srv/floodwatch/var/uploads/
+ls -l /var/www/floodwatch/var/uploads/
 ```
 
 Now check the body-size ceiling. The app hard-rejects anything over 5 MB + 64 KB with `422`; nginx rejects with `413` and an HTML error page. Which one answers tells you whether `client_max_body_size` is set correctly:
@@ -2604,7 +2604,7 @@ Delete the test report in the UI (an `OFFICIAL` account can delete any report; i
 ```bash
 # instance · root
 sudo -u postgres psql -d floodwatch -c "delete from \"Alert\" where title = 'Deployment smoke test';"
-rm -f /srv/floodwatch/var/uploads/<uuid>.jpg
+rm -f /var/www/floodwatch/var/uploads/<uuid>.jpg
 ```
 
 A SQL delete cannot fire `revalidateTag` and emits no socket event, so browsers already open keep showing the alert until they reload. On reload, alert and report reads are wrapped in `unstable_cache` with a 15-second TTL, so the change appears within about 15 seconds. Zones take up to 5 minutes and gauges 2 minutes. The LGU list is 24 hours, and **a restart does not shorten it** - in a production build those entries are written through to `.next/cache/fetch-cache` and outlive the process. To force it:
@@ -2612,7 +2612,7 @@ A SQL delete cannot fire `revalidateTag` and emits no socket event, so browsers 
 ```bash
 # instance · root
 systemctl stop floodwatch
-rm -rf /srv/floodwatch/.next/cache/fetch-cache
+rm -rf /var/www/floodwatch/.next/cache/fetch-cache
 systemctl start floodwatch
 ```
 
@@ -2624,12 +2624,12 @@ systemctl start floodwatch
 | Every POST/PUT/PATCH/DELETE to `/api/*` returns `403 CROSS_SITE`, in a browser | Something in front of nginx (a WAF, another CDN/proxy, an in-app webview) is stripping `Sec-Fetch-Site`, so `proxy.ts` falls back to the `Origin` comparison - which may never match. Or the client genuinely does not send `Sec-Fetch-*`: iOS Safari before 16.4, or any plain-HTTP page | `curl -sS -o /dev/null -w '%{http_code}\n' -X POST -H 'content-type: application/json' -H 'Sec-Fetch-Site: same-origin' -d '{"email":"x@y.z","password":"z"}' https://floodwatch.example.ph/api/auth/signin` → `401` means the guard is fine and the header is being stripped upstream. Then run the `Origin`-only diagnostic from step 7 to see whether the fallback can ever match | Remove the intermediary or stop it rewriting `Sec-Fetch-*`. Also make sure nginx passes `Host $host` and `X-Forwarded-Proto $scheme` and does not blank `Origin` (**Fix A**) |
 | Realtime never arrives; DevTools shows `/ws?...&transport=polling` requests repeating forever and no 101 | The `location /ws` block is missing `proxy_http_version 1.1` and the `Upgrade`/`Connection` headers | Step 10's upgrade curl returns something other than `101` | **Fix A** |
 | WebSocket connects, then drops every ~60 s and reconnects | nginx's default `proxy_read_timeout` is 60 s. Engine.io's 25 s `pingInterval` normally keeps it under that, so if you see this also suspect an intermediary with its own idle timeout (ALB, NAT gateway, corporate proxy) | `grep -rn 'proxy_read_timeout' /etc/nginx/` ; `grep -c 'upstream timed out' /var/log/nginx/error.log` | **Fix A** - `proxy_read_timeout 3600s;` and `proxy_buffering off;` |
-| Realtime completely dead: handshake returns 404 or the Next 404 page | `NEXT_PUBLIC_SOCKET_PATH` changed after the last build (it is inlined into the client bundle at build time, so the browser asks for the old path), or an App Router route was added under `/ws` | `curl -sS "https://floodwatch.example.ph/ws?EIO=4&transport=polling"` ; `grep -rn NEXT_PUBLIC_SOCKET_PATH /srv/floodwatch/.env` ; `ls /srv/floodwatch/app/ws 2>/dev/null` | Keep `/ws` and rebuild after any change: `cd /srv/floodwatch && sudo -u floodwatch /usr/local/bin/bun run build && systemctl restart floodwatch`. Never create `app/ws/**` - engine.io claims that path by prefix |
+| Realtime completely dead: handshake returns 404 or the Next 404 page | `NEXT_PUBLIC_SOCKET_PATH` changed after the last build (it is inlined into the client bundle at build time, so the browser asks for the old path), or an App Router route was added under `/ws` | `curl -sS "https://floodwatch.example.ph/ws?EIO=4&transport=polling"` ; `grep -rn NEXT_PUBLIC_SOCKET_PATH /var/www/floodwatch/.env` ; `ls /var/www/floodwatch/app/ws 2>/dev/null` | Keep `/ws` and rebuild after any change: `cd /var/www/floodwatch && sudo -u floodwatch /usr/local/bin/bun run build && systemctl restart floodwatch`. Never create `app/ws/**` - engine.io claims that path by prefix |
 | Realtime works for some viewers, not others; journal shows repeated `Session ID unknown` | More than one app process (PM2 cluster, a second instance, an ASG). Rooms live in one process's memory via `globalThis`, with no socket.io Redis adapter | `pgrep -cf 'tsx/dist/loader\.mjs'` → must be `1`; `ss -lntp 'sport = :3000'` → exactly one listener | Run exactly one process. This app is not horizontally scalable without a Redis adapter plus sticky sessions |
 | Photo upload fails with `413 Request Entity Too Large` and nothing in `journalctl -u floodwatch` | `client_max_body_size` too small (nginx default is `1m`) | `grep -rn client_max_body_size /etc/nginx/` ; `grep 'too large body' /var/log/nginx/error.log` | Set `client_max_body_size 8m;` in the server block, `nginx -t && systemctl reload nginx`. The app still caps photos at 5 MB and answers `422` itself |
-| Upload returns 500, or photos upload but 404 when displayed | `UPLOAD_DIR` is `join(process.cwd(), "var", "uploads")` - a wrong `WorkingDirectory` writes them somewhere else, or the directory is not writable by the app user | `systemctl show floodwatch -p WorkingDirectory` ; `ls -ld /srv/floodwatch/var/uploads` ; `journalctl -u floodwatch \| grep -i EACCES` | `WorkingDirectory=/srv/floodwatch` in the unit; `chown -R floodwatch:floodwatch /srv/floodwatch/var && chmod 750 /srv/floodwatch/var/uploads`. If the unit uses `ProtectSystem=strict`, add `ReadWritePaths=/srv/floodwatch/var /srv/floodwatch/.next` - `.next` is needed at **runtime** too, because `unstable_cache` writes to `.next/cache` while the service runs. Do not add an nginx `location /uploads` - the route handler serves those |
-| Build or start fails: `Cannot find module '/srv/floodwatch/generated/prisma/client'`, or `Module not found: Can't resolve '@/generated/prisma/client'` | `generated/prisma` is gitignored Prisma output and must be regenerated on the box; a bare `git pull` never brings it | `ls /srv/floodwatch/generated/prisma` | `cd /srv/floodwatch && sudo -u floodwatch /usr/local/bin/bun install --frozen-lockfile` (the `postinstall` script runs `prisma generate`), or `cd /srv/floodwatch && sudo -u floodwatch npx prisma generate`. Then rebuild |
-| Start fails: `Error: Could not find a production build in the '/srv/floodwatch/.next' directory` | The unit runs with `NODE_ENV=production` but `next build` never ran (or `.next` was wiped) | `journalctl -u floodwatch -n 30 --no-pager` ; `ls /srv/floodwatch/.next/BUILD_ID` | `cd /srv/floodwatch && sudo -u floodwatch /usr/local/bin/bun run build && systemctl restart floodwatch` |
+| Upload returns 500, or photos upload but 404 when displayed | `UPLOAD_DIR` is `join(process.cwd(), "var", "uploads")` - a wrong `WorkingDirectory` writes them somewhere else, or the directory is not writable by the app user | `systemctl show floodwatch -p WorkingDirectory` ; `ls -ld /var/www/floodwatch/var/uploads` ; `journalctl -u floodwatch \| grep -i EACCES` | `WorkingDirectory=/var/www/floodwatch` in the unit; `chown -R floodwatch:floodwatch /var/www/floodwatch/var && chmod 750 /var/www/floodwatch/var/uploads`. If the unit uses `ProtectSystem=strict`, add `ReadWritePaths=/var/www/floodwatch/var /var/www/floodwatch/.next` - `.next` is needed at **runtime** too, because `unstable_cache` writes to `.next/cache` while the service runs. Do not add an nginx `location /uploads` - the route handler serves those |
+| Build or start fails: `Cannot find module '/var/www/floodwatch/generated/prisma/client'`, or `Module not found: Can't resolve '@/generated/prisma/client'` | `generated/prisma` is gitignored Prisma output and must be regenerated on the box; a bare `git pull` never brings it | `ls /var/www/floodwatch/generated/prisma` | `cd /var/www/floodwatch && sudo -u floodwatch /usr/local/bin/bun install --frozen-lockfile` (the `postinstall` script runs `prisma generate`), or `cd /var/www/floodwatch && sudo -u floodwatch npx prisma generate`. Then rebuild |
+| Start fails: `Error: Could not find a production build in the '/var/www/floodwatch/.next' directory` | The unit runs with `NODE_ENV=production` but `next build` never ran (or `.next` was wiped) | `journalctl -u floodwatch -n 30 --no-pager` ; `ls /var/www/floodwatch/.next/BUILD_ID` | `cd /var/www/floodwatch && sudo -u floodwatch /usr/local/bin/bun run build && systemctl restart floodwatch` |
 | `PrismaClientInitializationError … P1001: Can't reach database server at …` | Postgres down, wrong host/port in `DATABASE_URL`, or it is not listening on the address you named | `pg_isready -h 127.0.0.1 -p 5432` ; `ss -lntp \| grep 5432` ; `sudo -u postgres psql -c 'show listen_addresses;'` | `systemctl enable --now postgresql`; use `127.0.0.1:5432` in `DATABASE_URL`; **Fix C** for `listen_addresses`/`pg_hba` |
 | `P1000: Authentication failed against database server` | Wrong role or password, an un-encoded special character in the URL password, or `pg_hba.conf` demanding a different method | `PGPASSWORD='…' psql -h 127.0.0.1 -U floodwatch -d floodwatch -c 'select 1'` ; `grep -v '^#' /etc/postgresql/16/main/pg_hba.conf \| grep -v '^$'` | Reset the password (**Fix C** - mind the shell quoting there), percent-encode `@ : / # ? & %` and any space in the URL password, and re-check `pg_hba.conf` |
 | Unit fails instantly with `status=203/EXEC` | `ExecStart` names a binary systemd cannot execute. Classic cause: the path was taken from a dev shell where node comes from `~/.nvm`, which systemd's minimal PATH cannot see and the app user cannot read. `node_modules/.bin/tsx` is a symlink to a file whose shebang is `#!/usr/bin/env node` | `systemctl cat floodwatch` ; `systemctl show floodwatch -p ExecStart` ; `sudo -u floodwatch test -x /usr/bin/node && echo ok` | Install Node system-wide and call it explicitly (**Fix B**) |
@@ -2690,10 +2690,10 @@ Install Node system-wide (the NodeSource steps are in *Instance provisioning*), 
 
 ```ini
 # /etc/systemd/system/floodwatch.service  (the ExecStart line)
-ExecStart=/usr/bin/node --import file:///srv/floodwatch/node_modules/tsx/dist/loader.mjs /srv/floodwatch/server.ts
+ExecStart=/usr/bin/node --import file:///var/www/floodwatch/node_modules/tsx/dist/loader.mjs /var/www/floodwatch/server.ts
 ```
 
-That form runs the app as a single process, so `MainPID` is the process holding the listener and `SIGTERM` reaches `server.ts`'s shutdown handler directly. Do not use `/srv/floodwatch/node_modules/.bin/tsx` - systemd execs it and the kernel runs its `#!/usr/bin/env node` shebang against the unit's minimal `PATH`, which is the usual source of `203/EXEC`.
+That form runs the app as a single process, so `MainPID` is the process holding the listener and `SIGTERM` reaches `server.ts`'s shutdown handler directly. Do not use `/var/www/floodwatch/node_modules/.bin/tsx` - systemd execs it and the kernel runs its `#!/usr/bin/env node` shebang against the unit's minimal `PATH`, which is the usual source of `203/EXEC`.
 
 ```bash
 # instance · root
@@ -2731,7 +2731,7 @@ alter role floodwatch with password 'NEW-PASSWORD';
 SQL
 ```
 
-Then update `DATABASE_URL` in `/srv/floodwatch/.env` (percent-encode any of `@ : / # ? & %` or a space in the password) and `systemctl restart floodwatch`.
+Then update `DATABASE_URL` in `/var/www/floodwatch/.env` (percent-encode any of `@ : / # ? & %` or a space in the password) and `systemctl restart floodwatch`.
 
 **Fix D - more swap, so `next build` survives on a small instance.**
 
@@ -2814,14 +2814,14 @@ A full deploy:
 
 ```bash
 # instance · root
-sudo -u floodwatch git -C /srv/floodwatch pull --ff-only
-cd /srv/floodwatch && sudo -u floodwatch /usr/local/bin/bun install --frozen-lockfile   # postinstall runs prisma generate
-cd /srv/floodwatch && sudo -u floodwatch /usr/local/bin/bun run db:deploy               # prisma migrate deploy
-cd /srv/floodwatch && sudo -u floodwatch /usr/local/bin/bun run build                   # prisma generate && next build
+sudo -u floodwatch git -C /var/www/floodwatch pull --ff-only
+cd /var/www/floodwatch && sudo -u floodwatch /usr/local/bin/bun install --frozen-lockfile   # postinstall runs prisma generate
+cd /var/www/floodwatch && sudo -u floodwatch /usr/local/bin/bun run db:deploy               # prisma migrate deploy
+cd /var/www/floodwatch && sudo -u floodwatch /usr/local/bin/bun run build                   # prisma generate && next build
 systemctl restart floodwatch
 ```
 
-Every one of those needs `/srv/floodwatch` as its working directory and needs `/srv/floodwatch/.env` readable by `floodwatch` - `prisma generate`, `migrate deploy` and the build all resolve `DATABASE_URL` through `prisma7.config.ts`, which loads `.env` from the current directory.
+Every one of those needs `/var/www/floodwatch` as its working directory and needs `/var/www/floodwatch/.env` readable by `floodwatch` - `prisma generate`, `migrate deploy` and the build all resolve `DATABASE_URL` through `prisma7.config.ts`, which loads `.env` from the current directory.
 
 Two things to know about this shape. There is no `output: "standalone"`, so the deployed tree needs the full `node_modules`, `.next` and source - you cannot ship `.next` alone. And `next build` rewrites `.next` underneath the running server, so viewers mid-session may see a handful of 404s on JS chunks between the build finishing and the restart; do it in a quiet window and restart immediately. After every deploy, re-run smoke steps 1, 6, 10 and 11.
 
@@ -2948,10 +2948,10 @@ Three things grow on this box: report photos, Postgres, and the journal. Next's 
 ```bash
 # instance · root
 df -h /
-du -sh /srv/floodwatch/var/uploads /srv/floodwatch/.next/cache
+du -sh /var/www/floodwatch/var/uploads /var/www/floodwatch/.next/cache
 du -sh /var/lib/postgresql
 journalctl --disk-usage
-ls /srv/floodwatch/var/uploads | wc -l
+ls /var/www/floodwatch/var/uploads | wc -l
 ```
 
 At 5 MB per photo, 10,000 reports with photos is ~50 GB. Size the EBS volume for the flood season, not for today, and alarm on `disk_used_percent > 85`. A full disk breaks uploads (`ENOSPC` on `writeFile`) and Postgres writes at the same time, so it is the failure worth catching early.
@@ -2972,9 +2972,9 @@ Two things that section leaves to you and the checklist does not let you skip: *
 ```bash
 # instance · root
 openssl rand -hex 32
-editor /srv/floodwatch/.env            # replace the AUTH_SECRET= line
-chown floodwatch:floodwatch /srv/floodwatch/.env
-chmod 600 /srv/floodwatch/.env
+editor /var/www/floodwatch/.env            # replace the AUTH_SECRET= line
+chown floodwatch:floodwatch /var/www/floodwatch/.env
+chmod 600 /var/www/floodwatch/.env
 systemctl restart floodwatch
 ```
 
@@ -2990,7 +2990,7 @@ The seed creates `dev@renmendoza.com` with the password `floodwatch` unless `SEE
 
 ```bash
 # instance · app user - type the password, then Ctrl-D. Nothing lands in argv or shell history.
-cd /srv/floodwatch
+cd /var/www/floodwatch
 sudo -u floodwatch /usr/bin/node -e 'const b=require("bcryptjs");const fs=require("fs");console.log(b.hashSync(fs.readFileSync(0,"utf8").trim(),10))'
 ```
 
@@ -3022,11 +3022,11 @@ Expected output: `UPDATE 1`. Existing sessions are JWTs and stay valid until the
 
   Any change to `TILE_URL`, `TILE_ATTRIBUTION` or `TILE_MAX_ZOOM` is compiled into the client bundle, so it needs `bun run build` and a restart - not just a restart. If you switch providers again, mind the axis order (Stadia, OSM and CARTO are `{z}/{x}/{y}`; Esri's ArcGIS services are `{z}/{y}/{x}`) and leave Leaflet's `detectRetina` off - `{r}` already handles high-DPI screens, while `detectRetina` requests tiles a zoom deeper and quadruples both the count and the bill.
 - [ ] Seeded official's password changed from `floodwatch` (see above), and the account's email/name updated if it is not the real operator.
-- [ ] `AUTH_SECRET` is a fresh `openssl rand -hex 32`, and `/srv/floodwatch/.env` is mode `0600` owned by `floodwatch` - and readable by the build, which loads it from the working directory.
+- [ ] `AUTH_SECRET` is a fresh `openssl rand -hex 32`, and `/var/www/floodwatch/.env` is mode `0600` owned by `floodwatch` - and readable by the build, which loads it from the working directory.
 - [ ] `NODE_ENV=production` in the unit - the journal must say `dev=false`.
 - [ ] `HOSTNAME=127.0.0.1`; `ss -lntp` shows port 3000 on loopback only; the security group opens 22, 80 and 443 and nothing else.
 - [ ] Exactly one app process: `pgrep -cf 'tsx/dist/loader\.mjs'` returns `1`. No PM2 cluster mode, no second instance, no autoscaling group. Socket.io rooms live in this process's memory with no Redis adapter.
-- [ ] `NEXT_PUBLIC_SOCKET_PATH` is the same in `/srv/floodwatch/.env` now as it was when `.next` was built - it is inlined into the client bundle.
+- [ ] `NEXT_PUBLIC_SOCKET_PATH` is the same in `/var/www/floodwatch/.env` now as it was when `.next` was built - it is inlined into the client bundle.
 - [ ] `db:seed:demo` has never been run here - it replaces reports, alerts and zones wholesale.
 - [ ] No route exists or will ever be added under `app/ws/**`.
 - [ ] Cloudflare is in **Full (strict)**, Always Use HTTPS is on, WebSockets are on, and Rocket Loader is **off** (it breaks React hydration).
