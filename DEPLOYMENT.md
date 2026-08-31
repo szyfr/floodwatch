@@ -1013,7 +1013,20 @@ ls -lh /var/backups/floodwatch
 
 Only needed if push notifications are configured (`VAPID_*` in `.env`). It is what makes a restart mid-broadcast self-heal.
 
-A broadcast writes one `PushDispatch` row in the same transaction as the alert, and the fan-out runs off `after()`, which `app.close()` awaits on SIGTERM - so a normal `systemctl restart` finishes the page in flight and writes its cursor. What it cannot cover is a SIGKILL, an OOM, or a box that loses power mid-fan-out. This timer picks those up within a minute:
+A broadcast writes one `PushDispatch` row in the same transaction as the alert, and the fan-out runs off `after()`, which `app.close()` awaits on SIGTERM - so a normal `systemctl restart` finishes the page in flight and writes its cursor. What it cannot cover is a SIGKILL, an OOM, or a box that loses power mid-fan-out. This timer picks those up within a minute.
+
+Both units are checked in at `deploy/systemd/`, with install and troubleshooting notes in `deploy/systemd/README.md`. Install them from there rather than retyping:
+
+```bash
+cd /srv/floodwatch
+sudo install -m 0644 deploy/systemd/floodwatch-push-sweep.service \
+                     deploy/systemd/floodwatch-push-sweep.timer \
+                     /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now floodwatch-push-sweep.timer
+```
+
+The checked-in copies carry a hardening block the listing below omits for brevity. For reference, the shape is:
 
 ```bash
 sudo tee /etc/systemd/system/floodwatch-push-sweep.service >/dev/null <<'UNIT'

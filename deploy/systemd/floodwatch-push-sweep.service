@@ -1,0 +1,60 @@
+# /etc/systemd/system/floodwatch-push-sweep.service
+#
+# Resumes any push fan-out that never reached finishedAt.
+#
+# A normal `systemctl restart` does NOT need this: server.ts flips the stop
+# flag before app.close(), and app.close() awaits the pending after() work, so
+# the page in flight finishes and writes its cursor inside TimeoutStopSec=20.
+# This unit is for the cases the app cannot handle from inside - SIGKILL, the
+# OOM killer, and power loss - where a dispatch would otherwise sit unfinished
+# forever and the rest of an evacuation order would never be sent.
+
+[Unit]
+Description=Resume any interrupted Floodwatch push fan-out
+# Ordering only. NOT Requires= or Wants=: those ACTIVATE floodwatch.service, so
+# a once-a-minute timer would restart the app somebody deliberately stopped to
+# run a migration or a restore. If the app is down, the curl below fails and
+# the journal says so, which is the signal you want.
+After=floodwatch.service
+
+[Service]
+Type=oneshot
+User=floodwatch
+Group=floodwatch
+
+# The secret is read from the app's own .env rather than duplicated here, so
+# rotating it is one edit in one place. EnvironmentFile= would load the file
+# but not export it to a shell, hence the explicit source.
+#
+# Requires /srv/floodwatch/.env to be floodwatch:floodwatch 0600 - which is what
+# DEPLOYMENT.md's "Write the production .env" step already does. Root-owned and
+# every run fails with a permission error.
+#
+# -f  turn an HTTP error into a visible unit failure instead of a silent success
+# -sS quiet, but still print the error if one happens
+# -m  a hung request must not still be running when the next minute fires
+ExecStart=/bin/bash -c 'set -a; . /srv/floodwatch/.env; set +a; exec curl -fsS -m 30 -X POST -H "x-push-sweep-secret: $PUSH_SWEEP_SECRET" http://127.0.0.1:3000/api/internal/push/sweep'
+
+Nice=10
+SyslogIdentifier=floodwatch-push-sweep
+
+# --- hardening ---
+# This only runs bash and curl as an unprivileged user, but the directives are
+# free. If a run ever fails for a reason you cannot explain, comment this block
+# out first and re-test before looking anywhere else.
+NoNewPrivileges=true
+CapabilityBoundingSet=
+PrivateTmp=true
+PrivateDevices=true
+# /srv is untouched by this: ProtectHome covers /home, /root and /run/user only,
+# even though /srv/floodwatch is the service account's home directory.
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+# AF_INET reaches 127.0.0.1:3000; AF_UNIX is needed to write to the journal.
+RestrictAddressFamilies=AF_INET AF_UNIX
+LockPersonality=true

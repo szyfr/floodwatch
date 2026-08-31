@@ -1,0 +1,25 @@
+# /etc/systemd/system/floodwatch-push-sweep.timer
+#
+# Enable THIS, not the .service. A timer activates the service of the same
+# basename automatically; enabling the service instead would run it once at
+# boot and never again.
+
+[Unit]
+Description=Resume interrupted Floodwatch push fan-outs every minute
+
+[Timer]
+# The app's ExecStartPost readiness gate allows up to 60s for the listener, so
+# the first sweep waits rather than logging a guaranteed connection refused.
+OnBootSec=45s
+
+# Measured from when the last run FINISHED, not when it started, so a slow
+# sweep can never overlap the next one.
+OnUnitActiveSec=1min
+
+# A run missed while the box was off fires once at next boot. This is the line
+# that makes power loss recoverable: an interrupted evacuation order finishes
+# within a minute of the instance coming back, with no broadcast to trigger it.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
