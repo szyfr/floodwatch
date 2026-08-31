@@ -209,7 +209,7 @@ export function AuthForm({
             inputMode="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="rosa@gmail.com"
+            placeholder="juan@example.com"
             autoComplete="email"
             aria-invalid={emailError ? true : undefined}
             aria-describedby={emailError ? "a-email-error" : undefined}
