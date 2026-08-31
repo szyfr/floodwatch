@@ -423,7 +423,7 @@ The layout, once the deploy section has cloned the repo into it:
 - `lib/server/uploads.ts` defines `UPLOAD_DIR = join(process.cwd(), "var", "uploads")`. Both the write path (`POST /api/uploads`) and the read path (`app/uploads/[name]/route.ts`) use it. Start the service from a different directory and photos are written somewhere new and the ones already on disk 404.
 - `server.ts` and `prisma7.config.ts` both begin with `import "dotenv/config"`, which loads `.env` from the working directory. A wrong cwd means no `DATABASE_URL` and no `AUTH_SECRET`.
 
-So `WorkingDirectory=/var/www/floodwatch` in the systemd unit, and `cd /var/www/floodwatch` before any `bun run` command. Making `/var/www/floodwatch` simultaneously the home directory and the checkout keeps those aligned by construction.
+So `WorkingDirectory=/var/www/floodwatch` in the systemd unit, and `cd /var/www/floodwatch` before any `bun run` command. The checkout is deliberately **not** the service account's home - that is `/home/floodwatch`, created at `adduser --home` above - so the deploy key under `~/.ssh` and bun's cache under `~/.bun` stay outside the git working tree and survive a `git clean -xdf`.
 
 nginx never needs access to `var/uploads` - photos are streamed by the Node route handler, not served as static files (they are written after boot, and Next only indexes `public/` once at startup). `0750` is correct; do not loosen it to let nginx in.
 
@@ -448,7 +448,7 @@ sudo apt-get install -y nodejs
 node -v   # expect v24.x
 ```
 
-**Not nvm.** nvm installs into a single user's home directory and is only initialised by an interactive login shell. systemd's `ExecStart` runs no shell profile, so the unit would have to hardcode `/var/www/floodwatch/.nvm/versions/node/v24.18.0/bin/node` - a path that changes on every patch upgrade and silently breaks the service the next time someone runs `nvm install`. A system package at a stable path is the right answer for anything that runs under systemd.
+**Not nvm.** nvm installs into a single user's home directory and is only initialised by an interactive login shell. systemd's `ExecStart` runs no shell profile, so the unit would have to hardcode `/home/floodwatch/.nvm/versions/node/v24.18.0/bin/node` - a path that changes on every patch upgrade and silently breaks the service the next time someone runs `nvm install`. A system package at a stable path is the right answer for anything that runs under systemd.
 
 Remember that unattended-upgrades will not touch this repository. Node upgrades are manual:
 
@@ -952,7 +952,7 @@ mv "$db_out.part" "$db_out"
 # app/api/uploads/route.ts mkdirs UPLOAD_DIR lazily on the first upload, so on
 # a freshly deployed box this directory does not exist yet. Create it with the
 # service account's ownership - root-owned would break uploads outright.
-install -d -o floodwatch -g floodwatch -m 0755 "$APP_DIR/var/uploads"
+install -d -o floodwatch -g floodwatch -m 0750 "$APP_DIR/var/uploads"
 
 tar -czf "$up_out.part" -C "$APP_DIR/var" uploads
 mv "$up_out.part" "$up_out"

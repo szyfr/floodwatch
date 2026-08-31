@@ -30,10 +30,15 @@ Group=floodwatch
 # DEPLOYMENT.md's "Write the production .env" step already does. Root-owned and
 # every run fails with a permission error.
 #
+# There is no set -e around the source on purpose - it is guarded explicitly
+# instead, because a bare failure would fall through to curl with an empty
+# secret, the route would answer 404 by design, and the journal would blame a
+# wrong secret once a minute forever while no fan-out was ever resumed.
+#
 # -f  turn an HTTP error into a visible unit failure instead of a silent success
 # -sS quiet, but still print the error if one happens
 # -m  a hung request must not still be running when the next minute fires
-ExecStart=/bin/bash -c 'set -a; . /var/www/floodwatch/.env; set +a; exec curl -fsS -m 30 -X POST -H "x-push-sweep-secret: $PUSH_SWEEP_SECRET" http://127.0.0.1:3000/api/internal/push/sweep'
+ExecStart=/bin/bash -c 'set -a; . /var/www/floodwatch/.env || { echo "cannot read /var/www/floodwatch/.env - check it is floodwatch:floodwatch 0600" >&2; exit 1; }; set +a; : "${PUSH_SWEEP_SECRET:?not set in .env - the sweep cannot authenticate}"; exec curl -fsS -m 30 -X POST -H "x-push-sweep-secret: $PUSH_SWEEP_SECRET" http://127.0.0.1:3000/api/internal/push/sweep'
 
 Nice=10
 SyslogIdentifier=floodwatch-push-sweep
@@ -46,8 +51,9 @@ NoNewPrivileges=true
 CapabilityBoundingSet=
 PrivateTmp=true
 PrivateDevices=true
-# /var/www is untouched by this: ProtectHome covers /home, /root and /run/user only,
-# even though /var/www/floodwatch is the service account's home directory.
+# /var/www is untouched by this: ProtectHome covers /home, /root and /run/user
+# only. The service account's home is /home/floodwatch, which IS covered - but
+# nothing here reads it, so the unit is unaffected either way.
 ProtectHome=true
 ProtectSystem=strict
 ProtectKernelTunables=true
