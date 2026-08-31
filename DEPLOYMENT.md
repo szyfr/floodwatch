@@ -1019,8 +1019,10 @@ A broadcast writes one `PushDispatch` row in the same transaction as the alert, 
 sudo tee /etc/systemd/system/floodwatch-push-sweep.service >/dev/null <<'UNIT'
 [Unit]
 Description=Resume any interrupted Floodwatch push fan-out
+# Ordering only. NOT Requires= or Wants=: those ACTIVATE floodwatch.service,
+# so a minute-timer would restart the app you deliberately stopped to run a
+# migration. If the app is down, the curl below simply fails and says so.
 After=floodwatch.service
-Requires=floodwatch.service
 
 [Service]
 Type=oneshot
